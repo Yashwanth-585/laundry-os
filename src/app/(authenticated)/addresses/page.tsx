@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AddressesPage() {
@@ -25,14 +27,12 @@ export default async function AddressesPage() {
               Manage the pickup and delivery addresses for your laundry.
             </p>
           </div>
-          <button
-            className="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950"
-            type="button"
-            disabled
-            title="Address creation is coming soon"
+          <Link
+            className="rounded-lg bg-zinc-950 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            href="/addresses/new"
           >
             Add address
-          </button>
+          </Link>
         </header>
 
         {error ? (
