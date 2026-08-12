@@ -54,9 +54,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Image
               src="/brand/washland-logo.png"
               alt="WashLand"
-              width={140}
-              height={140}
-              className="h-20 w-auto object-contain"
+              width={220}
+              height={220}
+              className="w-28 sm:w-32 h-auto object-contain mx-auto"
               priority
             />
           </Link>

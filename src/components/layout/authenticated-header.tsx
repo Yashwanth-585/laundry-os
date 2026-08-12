@@ -29,9 +29,9 @@ export function AuthenticatedHeader({ userEmail }: AuthenticatedHeaderProps) {
             <Image
               src="/brand/washland-horizontal.png"
               alt="WashLand LaundryOS"
-              width={160}
-              height={40}
-              className="h-8 w-auto object-contain"
+              width={320}
+              height={80}
+              className="w-[160px] sm:w-[180px] h-auto object-contain shrink-0"
               priority
             />
           </Link>
@@ -45,11 +45,10 @@ export function AuthenticatedHeader({ userEmail }: AuthenticatedHeaderProps) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive
                       ? "bg-slate-100 text-brand-navy font-semibold"
                       : "text-slate-600 hover:bg-slate-50 hover:text-brand-navy"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -114,11 +113,10 @@ export function AuthenticatedHeader({ userEmail }: AuthenticatedHeaderProps) {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`rounded-md px-3 py-2 text-base font-medium transition-colors ${
-                    isActive
+                  className={`rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive
                       ? "bg-slate-100 text-brand-navy font-semibold"
                       : "text-slate-700 hover:bg-slate-50 hover:text-brand-navy"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>

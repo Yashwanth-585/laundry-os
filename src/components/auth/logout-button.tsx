@@ -14,7 +14,7 @@ export function LogoutButton() {
     const { error } = await createClient().auth.signOut({ scope: "local" });
 
     if (!error) {
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
     } else {
       setIsSigningOut(false);

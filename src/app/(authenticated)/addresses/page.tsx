@@ -70,6 +70,14 @@ export default async function AddressesPage() {
                     {address.city}, {address.state} - {address.pincode}
                   </p>
                 </address>
+                <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+                  <Link
+                    href={`/addresses/${address.id}/edit`}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-blue-deep/20"
+                  >
+                    Edit address
+                  </Link>
+                </div>
               </article>
             ))}
           </section>
