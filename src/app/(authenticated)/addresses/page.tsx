@@ -1,5 +1,6 @@
 import Link from "next/link";
-
+import { DeleteAddressButton } from "@/components/addresses/delete-address-button";
+import { MakeDefaultButton } from "@/components/addresses/make-default-button";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AddressesPage() {
@@ -70,13 +71,19 @@ export default async function AddressesPage() {
                     {address.city}, {address.state} - {address.pincode}
                   </p>
                 </address>
-                <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+                <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+                  {!address.is_default ? (
+                    <MakeDefaultButton addressId={address.id} />
+                  ) : null}
+
                   <Link
                     href={`/addresses/${address.id}/edit`}
                     className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-blue-deep/20"
                   >
                     Edit address
                   </Link>
+
+                  <DeleteAddressButton addressId={address.id} />
                 </div>
               </article>
             ))}

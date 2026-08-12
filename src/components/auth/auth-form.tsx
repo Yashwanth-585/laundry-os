@@ -26,6 +26,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const email = String(formData.get("email"));
     const password = String(formData.get("password"));
     const supabase = createClient();
+
     const { data, error: authError } = isLogin
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
@@ -34,6 +35,13 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     if (authError) {
       setError(authError.message);
+      return;
+    }
+
+    if (!isLogin && data.user && data.user.identities?.length === 0) {
+      setError(
+        "An account may already exist with this email. Please sign in instead.",
+      );
       return;
     }
 
