@@ -21,5 +21,14 @@ export function LogoutButton() {
     }
   }
 
-  return <button className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800" onClick={handleSignOut} disabled={isSigningOut} type="button">{isSigningOut ? "Signing out..." : "Sign out"}</button>;
+  return (
+    <button
+      className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-blue-deep/20 disabled:cursor-not-allowed disabled:opacity-60"
+      onClick={handleSignOut}
+      disabled={isSigningOut}
+      type="button"
+    >
+      {isSigningOut ? "Signing out..." : "Sign out"}
+    </button>
+  );
 }
