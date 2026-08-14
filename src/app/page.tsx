@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { HeroSlideshow } from "@/components/home/hero-slideshow";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -91,9 +92,11 @@ export default async function Home() {
       </header>
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div className="grid items-center gap-12 lg:grid-cols-12">
+        {/* =========================================================
+            HERO
+        ========================================================== */}
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-10">
             {/* Hero Text */}
             <div className="lg:col-span-7">
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-blue-deep/20 bg-brand-blue-deep/5 px-3.5 py-1 text-xs font-semibold text-brand-blue-deep">
@@ -101,11 +104,11 @@ export default async function Home() {
                 WashLand LaundryOS
               </div>
 
-              <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl sm:leading-[1.15] lg:text-6xl">
+              <h1 className="mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl sm:leading-[1.15] lg:text-5xl">
                 Smart, effortless laundry & dry-cleaning operations.
               </h1>
 
-              <p className="mt-5 text-base leading-7 text-slate-600 sm:text-lg">
+              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
                 Everything your laundry operations need — streamlined
                 customer care, saved addresses, scheduled pickups, and
                 seamless delivery workflow.
@@ -137,78 +140,16 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Hero Visual */}
+            {/* Hero Slideshow */}
             <div className="lg:col-span-5">
-              <div className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-brand-navy text-white">
-                      <svg
-                        className="size-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677"
-                        />
-                      </svg>
-                    </div>
-
-                    <div>
-                      <h2 className="text-sm font-bold text-slate-900">
-                        Pickup & Delivery
-                      </h2>
-
-                      <p className="text-xs text-slate-500">
-                        WashLand Express Service
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                    Operational
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3.5 text-xs">
-                    <span className="font-semibold text-slate-700">
-                      Default Service Location
-                    </span>
-
-                    <span className="font-semibold text-brand-blue-deep">
-                      Verified
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3.5 text-xs">
-                    <span className="font-semibold text-slate-700">
-                      Wash & Fold / Dry Clean
-                    </span>
-
-                    <span className="font-semibold text-brand-orange">
-                      Ready
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
-                  <span>LaundryOS Platform v0.1</span>
-
-                  <span className="font-semibold text-brand-navy">
-                    Powered by WashLand
-                  </span>
-                </div>
-              </div>
+              <HeroSlideshow />
             </div>
           </div>
         </section>
 
-        {/* Services */}
+        {/* =========================================================
+            SERVICES
+        ========================================================== */}
         <section
           id="services"
           className="border-t border-slate-200 bg-white py-16 sm:py-24"
@@ -358,7 +299,9 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* How It Works */}
+        {/* =========================================================
+            HOW IT WORKS
+        ========================================================== */}
         <section
           id="how-it-works"
           className="border-t border-slate-200 bg-slate-50/70 py-16 sm:py-24"
@@ -430,7 +373,9 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Why WashLand */}
+        {/* =========================================================
+            WHY WASHLAND
+        ========================================================== */}
         <section
           id="why-washland"
           className="border-t border-slate-200 bg-white py-16 sm:py-24"
@@ -489,7 +434,9 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Final CTA */}
+        {/* =========================================================
+            FINAL CTA
+        ========================================================== */}
         <section className="border-t border-slate-200 bg-brand-navy py-16 text-white">
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -515,7 +462,9 @@ export default async function Home() {
         </section>
       </main>
 
-      {/* Footer */}
+      {/* =========================================================
+          FOOTER
+      ========================================================== */}
       <footer className="border-t border-slate-200 bg-white py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex flex-col items-center gap-2 sm:items-start">
