@@ -24,7 +24,7 @@ export default async function ServicesPage() {
         .order("created_at", { ascending: true });
 
     return (
-        <main className="relative overflow-hidden">
+        <main className="relative overflow-hidden bg-sky-100/70">
             {/* Ambient background, matching the homepage hero */}
             <div className="pointer-events-none absolute inset-0 -z-10">
                 <div className="absolute -left-24 -top-24 size-[24rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
@@ -32,7 +32,7 @@ export default async function ServicesPage() {
                 <div className="absolute inset-0 opacity-[0.3] bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-[size:26px_26px]" />
             </div>
 
-            <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+            <div className="mx-auto max-w-[1400px] px-4 py-10 sm:px-5 lg:px-6 lg:py-14">
                 {/* Page Header */}
                 <header className="max-w-2xl">
                     <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep shadow-sm">
@@ -59,7 +59,7 @@ export default async function ServicesPage() {
                     </div>
                 ) : (
                     <section
-                        className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4"
+                        className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4"
                         aria-label="Laundry services"
                     >
                         {services?.map((service) => {
@@ -71,7 +71,7 @@ export default async function ServicesPage() {
                                 <Link
                                     key={service.id}
                                     href={`/services/${service.id}`}
-                                    className="group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl bg-brand-navy shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-blue-deep/10"
+                                    className="group relative isolate flex min-h-[220px] overflow-hidden rounded-2xl bg-brand-navy shadow-sm ring-1 ring-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-orange/15 hover:ring-brand-orange/50"
                                 >
                                     {/* Background Image */}
                                     <Image
@@ -92,6 +92,9 @@ export default async function ServicesPage() {
                                         </span>
                                     </div>
 
+                                    {/* Bottom accent line, appears on hover */}
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0.5 origin-left scale-x-0 bg-brand-orange transition-transform duration-300 group-hover:scale-x-100" />
+
                                     {/* Content */}
                                     <div className="relative z-10 mt-auto w-full p-4">
                                         <h2 className="text-sm font-bold leading-tight text-white">
@@ -102,7 +105,7 @@ export default async function ServicesPage() {
                                             {service.description}
                                         </p>
 
-                                        <div className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 transition-colors group-hover:text-white">
+                                        <div className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 transition-colors group-hover:text-brand-orange">
                                             View items
                                             <span className="transition-transform duration-300 group-hover:translate-x-1">
                                                 →

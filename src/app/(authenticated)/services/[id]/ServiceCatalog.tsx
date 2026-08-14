@@ -297,9 +297,9 @@ export default function ServiceCatalog({
                                         setSearch("");
                                     }}
                                     className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition ${selectedCategory ===
-                                            category
-                                            ? "bg-brand-navy text-white shadow-sm"
-                                            : "border border-slate-200 bg-white text-slate-600 hover:border-brand-blue-deep hover:text-brand-blue-deep"
+                                        category
+                                        ? "bg-brand-navy text-white shadow-sm"
+                                        : "border border-slate-200 bg-white text-slate-600 hover:border-brand-blue-deep hover:text-brand-blue-deep"
                                         }`}
                                 >
                                     {category}
@@ -411,7 +411,7 @@ export default function ServiceCatalog({
                                                         )
                                                     }
                                                     aria-label={`Add one ${item.name}`}
-                                                    className="flex size-9 items-center justify-center rounded-lg bg-brand-blue-deep text-lg font-medium text-white transition hover:opacity-90"
+                                                    className="flex size-9 items-center justify-center rounded-lg bg-brand-orange text-lg font-medium text-white transition hover:opacity-90"
                                                 >
                                                     +
                                                 </button>
@@ -560,7 +560,7 @@ export default function ServiceCatalog({
                                                                 1,
                                                             )
                                                         }
-                                                        className="flex size-7 items-center justify-center rounded-md bg-brand-blue-deep text-sm text-white hover:opacity-90"
+                                                        className="flex size-7 items-center justify-center rounded-md bg-brand-orange text-sm text-white hover:opacity-90"
                                                     >
                                                         +
                                                     </button>

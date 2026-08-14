@@ -71,7 +71,7 @@ export default async function OrdersPage() {
     }
 
     return (
-        <main className="relative overflow-hidden">
+        <main className="relative overflow-hidden bg-sky-100/70">
             {/* Ambient background, matching the rest of the site */}
             <div className="pointer-events-none absolute inset-0 -z-10">
                 <div className="absolute -left-24 -top-24 size-[24rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
@@ -79,7 +79,7 @@ export default async function OrdersPage() {
                 <div className="absolute inset-0 opacity-[0.3] bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-[size:26px_26px]" />
             </div>
 
-            <div className="mx-auto max-w-6xl px-4 py-8 pb-20 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1400px] px-4 py-8 pb-20 sm:px-5 lg:px-6">
                 <header>
                     <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep shadow-sm">
                         <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
@@ -137,7 +137,7 @@ export default async function OrdersPage() {
                                 <Link
                                     key={order.id}
                                     href={`/orders/${order.id}`}
-                                    className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5 sm:p-6"
+                                    className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-orange/30 hover:shadow-xl hover:shadow-brand-blue-deep/10 sm:p-6"
                                 >
                                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="min-w-0">
@@ -259,7 +259,7 @@ export default async function OrdersPage() {
                                             View order details
                                         </span>
 
-                                        <span className="text-lg font-bold text-brand-blue-deep transition-transform group-hover:translate-x-1">
+                                        <span className="text-lg font-bold text-brand-blue-deep transition-all group-hover:translate-x-1 group-hover:text-brand-orange">
                                             →
                                         </span>
                                     </div>

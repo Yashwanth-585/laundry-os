@@ -68,43 +68,48 @@ export default async function ServicePage({
     });
 
     return (
-        <main className="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8">
-            <Link
-                href="/services"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue-deep hover:underline"
-            >
-                ← Back to services
-            </Link>
+        <div className="min-h-screen bg-sky-100/70">
+            <main className="mx-auto max-w-[1400px] px-4 py-8 pb-32 sm:px-5 lg:px-6">
+                <Link
+                    href="/services"
+                    className="group inline-flex items-center gap-2 text-sm font-semibold text-brand-blue-deep transition hover:text-brand-navy"
+                >
+                    <span className="transition-transform group-hover:-translate-x-0.5">
+                        ←
+                    </span>{" "}
+                    Back to services
+                </Link>
 
-            <header className="mt-6 max-w-3xl">
-                <p className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
-                    {service.name}
-                </p>
+                <header className="mt-6 max-w-3xl">
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                        {service.name}
+                    </p>
 
-                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
-                    Select your items
-                </h1>
+                    <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+                        Select your items
+                    </h1>
 
-                <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-                    Select the garments you want to include in your{" "}
-                    {service.name.toLowerCase()} order.
-                </p>
-            </header>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+                        Select the garments you want to include in your{" "}
+                        {service.name.toLowerCase()} order.
+                    </p>
+                </header>
 
-            {itemsError ? (
-                <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    We couldn't load the items for this service. Please try
-                    again later.
-                </div>
-            ) : (
-                <ServiceCatalog
-                    service={{
-                        id: service.id,
-                        name: service.name,
-                    }}
-                    items={items}
-                />
-            )}
-        </main>
+                {itemsError ? (
+                    <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        We couldn't load the items for this service. Please try
+                        again later.
+                    </div>
+                ) : (
+                    <ServiceCatalog
+                        service={{
+                            id: service.id,
+                            name: service.name,
+                        }}
+                        items={items}
+                    />
+                )}
+            </main>
+        </div>
     );
 }

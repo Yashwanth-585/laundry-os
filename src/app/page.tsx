@@ -23,7 +23,7 @@ export default async function Home() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <div className="h-[3px] w-full bg-gradient-to-r from-brand-navy via-brand-blue-deep to-brand-orange" />
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-4 sm:px-5 lg:px-6">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/brand/washland-horizontal.png"
@@ -99,7 +99,7 @@ export default async function Home() {
 
                 <Link
                   href="/signup"
-                  className="rounded-lg bg-brand-navy px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-blue-deep hover:shadow-md"
+                  className="rounded-lg bg-brand-navy px-4 py-2 text-xs font-semibold text-white shadow-sm ring-1 ring-inset ring-brand-orange/0 transition hover:bg-brand-blue-deep hover:shadow-md hover:ring-brand-orange/40"
                 >
                   Get started
                 </Link>
@@ -113,7 +113,7 @@ export default async function Home() {
         {/* =========================================================
             HERO
         ========================================================== */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden bg-gradient-to-r from-white via-sky-50 to-sky-200">
           {/* Ambient background */}
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute -left-24 -top-24 size-[28rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
@@ -121,7 +121,7 @@ export default async function Home() {
             <div className="absolute inset-0 opacity-[0.35] bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-[size:26px_26px]" />
           </div>
 
-          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-24">
+          <div className="mx-auto max-w-[1400px] px-4 py-14 sm:px-5 lg:px-6 lg:py-24">
             <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
               {/* Hero Text */}
               <div className="lg:col-span-7">
@@ -133,7 +133,12 @@ export default async function Home() {
                 </div>
 
                 <h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl sm:leading-[1.1] lg:text-6xl">
-                  Smart, effortless laundry & dry-cleaning operations.
+                  Smart,{" "}
+                  <span className="relative inline-block">
+                    effortless
+                    <span className="absolute -bottom-1 left-0 h-1.5 w-full rounded-full bg-brand-orange/60" />
+                  </span>{" "}
+                  laundry & dry-cleaning operations.
                 </h1>
 
                 <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
@@ -197,11 +202,17 @@ export default async function Home() {
         ========================================================== */}
         <section
           id="services"
-          className="border-t border-slate-200 bg-white py-16 sm:py-24"
+          className="relative overflow-hidden border-t border-slate-200 bg-sky-100/70 py-16 sm:py-24"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Ambient background to match hero treatment */}
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -right-32 -top-16 size-[26rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
+            <div className="absolute -left-32 bottom-0 size-[22rem] rounded-full bg-brand-orange/5 blur-3xl" />
+          </div>
+
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-6">
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
                 <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
                   <span className="size-1.5 rounded-full bg-brand-orange" />
                 </span>
@@ -220,7 +231,7 @@ export default async function Home() {
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {/* Wash & Fold */}
-              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/10">
                 <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
@@ -248,7 +259,7 @@ export default async function Home() {
               </div>
 
               {/* Dry Cleaning */}
-              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/10">
                 <div className="flex size-11 items-center justify-center rounded-xl bg-brand-blue-deep text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
@@ -276,7 +287,7 @@ export default async function Home() {
               </div>
 
               {/* Ironing */}
-              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/10">
                 <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
@@ -304,7 +315,7 @@ export default async function Home() {
               </div>
 
               {/* Pickup & Delivery */}
-              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/10">
                 <div className="flex size-11 items-center justify-center rounded-xl bg-brand-orange text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
@@ -352,11 +363,11 @@ export default async function Home() {
         ========================================================== */}
         <section
           id="how-it-works"
-          className="border-t border-slate-200 bg-slate-50/70 py-16 sm:py-24"
+          className="border-t border-slate-200 bg-white py-16 sm:py-24"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-6">
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-slate-50/70 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
                 <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
                   <span className="size-1.5 rounded-full bg-brand-orange" />
                 </span>
@@ -402,7 +413,7 @@ export default async function Home() {
                 ].map(([number, title, description], index) => (
                   <div
                     key={number}
-                    className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                    className="group relative overflow-hidden rounded-2xl border border-t-4 border-slate-200 border-t-brand-orange bg-slate-50/60 p-6 shadow-sm transition hover:-translate-y-1 hover:border-slate-200 hover:border-t-brand-orange hover:bg-white hover:shadow-md"
                   >
                     <span className="pointer-events-none absolute -right-2 -top-4 select-none text-6xl font-extrabold text-slate-100">
                       {number}
@@ -438,12 +449,17 @@ export default async function Home() {
         ========================================================== */}
         <section
           id="why-washland"
-          className="border-t border-slate-200 bg-white py-16 sm:py-24"
+          className="relative overflow-hidden border-t border-slate-200 bg-sky-100/70 py-16 sm:py-24"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -left-32 top-0 size-[24rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
+            <div className="absolute -right-24 bottom-0 size-[20rem] rounded-full bg-brand-orange/5 blur-3xl" />
+          </div>
+
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-6">
             <div className="grid items-center gap-12 lg:grid-cols-12">
               <div className="lg:col-span-5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
                   <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
                     <span className="size-1.5 rounded-full bg-brand-orange" />
                   </span>
@@ -481,7 +497,7 @@ export default async function Home() {
                 ].map(([title, description]) => (
                   <div
                     key={title}
-                    className="flex gap-3.5 rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:border-brand-blue-deep/30 hover:bg-white"
+                    className="flex gap-3.5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-orange/30 hover:shadow-md"
                   >
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-navy/5 text-brand-navy">
                       <svg
@@ -518,12 +534,12 @@ export default async function Home() {
         {/* =========================================================
             FINAL CTA
         ========================================================== */}
-        <section className="relative overflow-hidden border-t border-slate-200 bg-brand-navy py-16 text-white sm:py-20">
+        <section className="relative overflow-hidden border-t border-slate-200 bg-gradient-to-br from-brand-navy via-brand-navy to-brand-blue-deep py-16 text-white sm:py-20">
           <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:26px_26px]" />
           <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-brand-orange/20 blur-3xl" />
           <div className="pointer-events-none absolute -left-20 bottom-0 size-72 rounded-full bg-brand-blue-deep/30 blur-3xl" />
 
-          <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+          <div className="relative mx-auto max-w-[1400px] px-4 text-center sm:px-5 lg:px-6">
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               Ready for effortless laundry care?
             </h2>
@@ -536,7 +552,7 @@ export default async function Home() {
             <div className="mt-8 flex justify-center gap-4">
               <Link
                 href={isAuthenticated ? "/services" : "#services"}
-                className="rounded-lg bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy shadow-sm transition hover:bg-slate-100 hover:shadow-md"
+                className="rounded-lg bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy shadow-sm ring-1 ring-inset ring-transparent transition hover:bg-slate-100 hover:shadow-md hover:ring-brand-orange/40"
               >
                 {isAuthenticated
                   ? "Start an Order →"
@@ -550,8 +566,8 @@ export default async function Home() {
       {/* =========================================================
           FOOTER
       ========================================================== */}
-      <footer className="border-t border-slate-200 bg-white py-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6 lg:px-8">
+      <footer className="border-t border-slate-200 bg-sky-50 py-12">
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-5 lg:px-6">
           <div className="flex flex-col items-center gap-2 sm:items-start">
             <Image
               src="/brand/washland-horizontal.png"
@@ -633,4 +649,3 @@ export default async function Home() {
     </div>
   );
 }
-
