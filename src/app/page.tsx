@@ -10,10 +10,19 @@ export default async function Home() {
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = Boolean(data?.claims);
 
+  const services = [
+    { label: "Wash & Fold" },
+    { label: "Dry Cleaning" },
+    { label: "Ironing & Pressing" },
+    { label: "Pickup & Delivery" },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 scroll-smooth">
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+        <div className="h-[3px] w-full bg-gradient-to-r from-brand-navy via-brand-blue-deep to-brand-orange" />
+
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <Image
@@ -30,21 +39,21 @@ export default async function Home() {
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a
               href="#services"
-              className="transition hover:text-brand-navy"
+              className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
             >
               Services
             </a>
 
             <a
               href="#how-it-works"
-              className="transition hover:text-brand-navy"
+              className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
             >
               How it works
             </a>
 
             <a
               href="#why-washland"
-              className="transition hover:text-brand-navy"
+              className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
             >
               Why WashLand
             </a>
@@ -56,14 +65,14 @@ export default async function Home() {
               <>
                 <Link
                   href="/orders"
-                  className="hidden rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
+                  className="hidden rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-navy/30 hover:bg-slate-50 sm:inline-flex"
                 >
                   My Orders
                 </Link>
 
                 <Link
                   href="/dashboard"
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-brand-navy"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-navy/30 hover:bg-slate-50 hover:text-brand-navy"
                 >
                   Dashboard
                 </Link>
@@ -74,14 +83,14 @@ export default async function Home() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-navy/30 hover:bg-slate-50"
                 >
                   Sign in
                 </Link>
 
                 <Link
                   href="/signup"
-                  className="rounded-lg bg-brand-navy px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-blue-deep"
+                  className="rounded-lg bg-brand-navy px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-blue-deep hover:shadow-md"
                 >
                   Get started
                 </Link>
@@ -95,54 +104,81 @@ export default async function Home() {
         {/* =========================================================
             HERO
         ========================================================== */}
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid items-center gap-8 lg:grid-cols-12 lg:gap-10">
-            {/* Hero Text */}
-            <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 rounded-full border border-brand-blue-deep/20 bg-brand-blue-deep/5 px-3.5 py-1 text-xs font-semibold text-brand-blue-deep">
-                <span className="inline-block size-2 rounded-full bg-brand-orange" />
-                WashLand LaundryOS
+        <section className="relative overflow-hidden">
+          {/* Ambient background */}
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -left-24 -top-24 size-[28rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
+            <div className="absolute -right-24 top-40 size-[24rem] rounded-full bg-brand-orange/10 blur-3xl" />
+            <div className="absolute inset-0 opacity-[0.35] bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-[size:26px_26px]" />
+          </div>
+
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-24">
+            <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+              {/* Hero Text */}
+              <div className="lg:col-span-7">
+                <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-white py-1 pl-1.5 pr-3.5 text-xs font-semibold text-brand-blue-deep shadow-sm">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
+                    <span className="size-1.5 rounded-full bg-brand-orange" />
+                  </span>
+                  WashLand LaundryOS
+                </div>
+
+                <h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl sm:leading-[1.1] lg:text-6xl">
+                  Smart, effortless laundry & dry-cleaning operations.
+                </h1>
+
+                <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                  Everything your laundry operations need — streamlined
+                  customer care, saved addresses, scheduled pickups, and
+                  seamless delivery workflow.
+                </p>
+
+                <div className="mt-9 flex flex-col gap-3.5 sm:flex-row">
+                  <a
+                    href="#services"
+                    className="group rounded-lg bg-brand-navy px-6 py-3.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-deep hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue-deep/30"
+                  >
+                    Explore Services{" "}
+                    <span className="inline-block transition-transform group-hover:translate-x-0.5">
+                      →
+                    </span>
+                  </a>
+
+                  {isAuthenticated ? (
+                    <Link
+                      className="rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-center text-sm font-semibold text-slate-700 transition hover:border-brand-navy/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      href="/dashboard"
+                    >
+                      Open Dashboard
+                    </Link>
+                  ) : (
+                    <Link
+                      className="rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-center text-sm font-semibold text-slate-700 transition hover:border-brand-navy/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      href="/signup"
+                    >
+                      Get Started
+                    </Link>
+                  )}
+                </div>
+
+                {/* Service trust row */}
+                <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-200 pt-6">
+                  {services.map((service) => (
+                    <div
+                      key={service.label}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-500"
+                    >
+                      <span className="size-1.5 rounded-full bg-brand-orange" />
+                      {service.label}
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <h1 className="mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl sm:leading-[1.15] lg:text-5xl">
-                Smart, effortless laundry & dry-cleaning operations.
-              </h1>
-
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                Everything your laundry operations need — streamlined
-                customer care, saved addresses, scheduled pickups, and
-                seamless delivery workflow.
-              </p>
-
-              <div className="mt-8 flex flex-col gap-3.5 sm:flex-row">
-                <a
-                  href="#services"
-                  className="rounded-lg bg-brand-navy px-6 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-brand-blue-deep focus:outline-none focus:ring-2 focus:ring-brand-blue-deep/30"
-                >
-                  Explore Services →
-                </a>
-
-                {isAuthenticated ? (
-                  <Link
-                    className="rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
-                    href="/dashboard"
-                  >
-                    Open Dashboard
-                  </Link>
-                ) : (
-                  <Link
-                    className="rounded-lg border border-slate-300 bg-white px-6 py-3.5 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
-                    href="/signup"
-                  >
-                    Get Started
-                  </Link>
-                )}
+              {/* Hero Slideshow */}
+              <div className="lg:col-span-5">
+                <HeroSlideshow />
               </div>
-            </div>
-
-            {/* Hero Slideshow */}
-            <div className="lg:col-span-5">
-              <HeroSlideshow />
             </div>
           </div>
         </section>
@@ -156,11 +192,14 @@ export default async function Home() {
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
+                  <span className="size-1.5 rounded-full bg-brand-orange" />
+                </span>
                 Services
-              </h2>
+              </div>
 
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+              <p className="mt-4 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
                 Our Core Fabric Care Services
               </p>
 
@@ -170,10 +209,10 @@ export default async function Home() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {/* Wash & Fold */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:bg-white hover:shadow-md">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
                     fill="none"
@@ -200,8 +239,8 @@ export default async function Home() {
               </div>
 
               {/* Dry Cleaning */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:bg-white hover:shadow-md">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-blue-deep text-white">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-blue-deep text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
                     fill="none"
@@ -228,8 +267,8 @@ export default async function Home() {
               </div>
 
               {/* Ironing */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:bg-white hover:shadow-md">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-navy text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
                     fill="none"
@@ -256,8 +295,8 @@ export default async function Home() {
               </div>
 
               {/* Pickup & Delivery */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 transition hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:bg-white hover:shadow-md">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-orange text-white">
+              <div className="group rounded-2xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-brand-blue-deep/30 hover:shadow-lg hover:shadow-brand-blue-deep/5">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-brand-orange text-white transition group-hover:scale-105">
                   <svg
                     className="size-6"
                     fill="none"
@@ -285,10 +324,10 @@ export default async function Home() {
             </div>
 
             {/* Start an Order */}
-            <div className="mt-10 text-center">
+            <div className="mt-12 text-center">
               <Link
                 href={isAuthenticated ? "/services" : "/login"}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue-deep"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-deep hover:shadow-md"
               >
                 {isAuthenticated
                   ? "Start an Order"
@@ -308,11 +347,14 @@ export default async function Home() {
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+              <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 bg-slate-50/70 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
+                  <span className="size-1.5 rounded-full bg-brand-orange" />
+                </span>
                 Process
-              </h2>
+              </div>
 
-              <p className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+              <p className="mt-4 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
                 How WashLand Works
               </p>
 
@@ -322,53 +364,62 @@ export default async function Home() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                [
-                  "1",
-                  "Schedule Request",
-                  "Select your required fabric services and specify your pickup location.",
-                ],
-                [
-                  "2",
-                  "Doorstep Pickup",
-                  "Our team collects your garments safely from your saved address.",
-                ],
-                [
-                  "3",
-                  "Professional Care",
-                  "Items are washed, dry-cleaned, or pressed using high-grade standards.",
-                ],
-                [
-                  "4",
-                  "Fresh Delivery",
-                  "Fresh, crisp laundry is packaged and delivered right back to your door.",
-                ],
-              ].map(([number, title, description], index) => (
-                <div
-                  key={number}
-                  className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                  <span
-                    className={`inline-flex size-8 items-center justify-center rounded-full text-xs font-extrabold text-white ${index === 3
-                      ? "bg-brand-orange"
-                      : index === 1
-                        ? "bg-brand-blue-deep"
-                        : "bg-brand-navy"
-                      }`}
+            <div className="relative mt-14">
+              {/* Connecting line — only meaningful once cards sit in a single row */}
+              <div className="pointer-events-none absolute inset-x-6 top-10 hidden border-t border-dashed border-slate-300 lg:block" />
+
+              <div className="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  [
+                    "1",
+                    "Schedule Request",
+                    "Select your required fabric services and specify your pickup location.",
+                  ],
+                  [
+                    "2",
+                    "Doorstep Pickup",
+                    "Our team collects your garments safely from your saved address.",
+                  ],
+                  [
+                    "3",
+                    "Professional Care",
+                    "Items are washed, dry-cleaned, or pressed using high-grade standards.",
+                  ],
+                  [
+                    "4",
+                    "Fresh Delivery",
+                    "Fresh, crisp laundry is packaged and delivered right back to your door.",
+                  ],
+                ].map(([number, title, description], index) => (
+                  <div
+                    key={number}
+                    className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
                   >
-                    {number}
-                  </span>
+                    <span className="pointer-events-none absolute -right-2 -top-4 select-none text-6xl font-extrabold text-slate-100">
+                      {number}
+                    </span>
 
-                  <h3 className="mt-4 text-base font-bold text-slate-900">
-                    {title}
-                  </h3>
+                    <span
+                      className={`relative inline-flex size-8 items-center justify-center rounded-full text-xs font-extrabold text-white ${index === 3
+                        ? "bg-brand-orange"
+                        : index === 1
+                          ? "bg-brand-blue-deep"
+                          : "bg-brand-navy"
+                        }`}
+                    >
+                      {number}
+                    </span>
 
-                  <p className="mt-2 text-xs leading-5 text-slate-600">
-                    {description}
-                  </p>
-                </div>
-              ))}
+                    <h3 className="relative mt-4 text-base font-bold text-slate-900">
+                      {title}
+                    </h3>
+
+                    <p className="relative mt-2 text-xs leading-5 text-slate-600">
+                      {description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -383,11 +434,14 @@ export default async function Home() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-12">
               <div className="lg:col-span-5">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                <div className="inline-flex items-center gap-2 rounded-full border border-dashed border-brand-blue-deep/40 py-1 pl-1.5 pr-3.5 text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-brand-blue-deep/10">
+                    <span className="size-1.5 rounded-full bg-brand-orange" />
+                  </span>
                   Why WashLand
-                </h2>
+                </div>
 
-                <p className="mt-2 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+                <p className="mt-4 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
                   Built for Convenience & Quality
                 </p>
 
@@ -397,7 +451,7 @@ export default async function Home() {
                 </p>
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-2 lg:col-span-7">
+              <div className="grid gap-5 sm:grid-cols-2 lg:col-span-7">
                 {[
                   [
                     "Saved Address Management",
@@ -418,15 +472,33 @@ export default async function Home() {
                 ].map(([title, description]) => (
                   <div
                     key={title}
-                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5"
+                    className="flex gap-3.5 rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:border-brand-blue-deep/30 hover:bg-white"
                   >
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {title}
-                    </h3>
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-navy/5 text-brand-navy">
+                      <svg
+                        className="size-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
 
-                    <p className="mt-1.5 text-xs leading-5 text-slate-600">
-                      {description}
-                    </p>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {title}
+                      </h3>
+
+                      <p className="mt-1.5 text-xs leading-5 text-slate-600">
+                        {description}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -437,8 +509,12 @@ export default async function Home() {
         {/* =========================================================
             FINAL CTA
         ========================================================== */}
-        <section className="border-t border-slate-200 bg-brand-navy py-16 text-white">
-          <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+        <section className="relative overflow-hidden border-t border-slate-200 bg-brand-navy py-16 text-white sm:py-20">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:26px_26px]" />
+          <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-brand-orange/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 bottom-0 size-72 rounded-full bg-brand-blue-deep/30 blur-3xl" />
+
+          <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               Ready for effortless laundry care?
             </h2>
@@ -451,7 +527,7 @@ export default async function Home() {
             <div className="mt-8 flex justify-center gap-4">
               <Link
                 href={isAuthenticated ? "/services" : "#services"}
-                className="rounded-lg bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy transition hover:bg-slate-100"
+                className="rounded-lg bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy shadow-sm transition hover:bg-slate-100 hover:shadow-md"
               >
                 {isAuthenticated
                   ? "Start an Order →"
@@ -539,3 +615,4 @@ export default async function Home() {
     </div>
   );
 }
+

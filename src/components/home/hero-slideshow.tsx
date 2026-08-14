@@ -50,71 +50,81 @@ export function HeroSlideshow() {
 
     return (
         <div className="relative w-full">
-            <div className="relative aspect-[4/3] w-full overflow-hidden">
-                {/* Previous image */}
-                {previousIndex !== null && (
-                    <div className="absolute inset-0">
+            {/* Ambient color wash behind the card */}
+            <div className="pointer-events-none absolute -inset-5 -z-10 rounded-[36px] bg-gradient-to-br from-brand-blue-deep/15 via-transparent to-brand-orange/15 blur-2xl" />
+
+            <div className="relative overflow-hidden rounded-[28px] shadow-xl ring-1 ring-slate-900/5">
+                <div className="relative aspect-[4/5] w-full sm:aspect-[4/4.5]">
+                    {/* Previous image */}
+                    {previousIndex !== null && (
+                        <div className="absolute inset-0">
+                            <Image
+                                src={slides[previousIndex].src}
+                                alt=""
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 42vw"
+                                className="object-cover"
+                            />
+                        </div>
+                    )}
+
+                    {/* Current image */}
+                    <div
+                        key={activeIndex}
+                        className="absolute inset-0 animate-[heroFadeIn_1000ms_ease-in-out_forwards]"
+                    >
                         <Image
-                            src={slides[previousIndex].src}
-                            alt=""
+                            src={activeSlide.src}
+                            alt={activeSlide.title}
                             fill
+                            priority={activeIndex === 0}
                             sizes="(max-width: 1024px) 100vw, 42vw"
                             className="object-cover"
                         />
                     </div>
-                )}
 
-                {/* Current image */}
-                <div
-                    key={activeIndex}
-                    className="absolute inset-0 animate-[heroFadeIn_1000ms_ease-in-out_forwards]"
-                >
-                    <Image
-                        src={activeSlide.src}
-                        alt={activeSlide.title}
-                        fill
-                        priority={activeIndex === 0}
-                        sizes="(max-width: 1024px) 100vw, 42vw"
-                        className="object-cover"
-                    />
-                </div>
+                    {/* Legibility scrim */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950/75 via-slate-950/25 to-transparent" />
 
-                {/* Extremely subtle edge blending */}
-                <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)] bg-slate-50/20" />
+                    {/* Garment-tag corner accent */}
+                    <div className="absolute left-4 top-4 hidden items-center gap-1.5 rounded-full border border-dashed border-white/40 bg-white/10 py-1 pl-1.5 pr-3 backdrop-blur-sm sm:flex">
+                        <span className="flex size-4 items-center justify-center rounded-full bg-white/90">
+                            <span className="size-1.5 rounded-full bg-brand-orange" />
+                        </span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                            WashLand
+                        </span>
+                    </div>
 
-                {/* Text */}
-                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-brand-blue-deep">
-                        WashLand Services
-                    </p>
+                    {/* Caption + indicators */}
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                        <h2 className="text-xl font-bold text-white sm:text-2xl">
+                            {activeSlide.title}
+                        </h2>
 
-                    <h2 className="mt-1 text-xl font-bold text-brand-navy sm:text-2xl">
-                        {activeSlide.title}
-                    </h2>
+                        <p className="mt-1.5 max-w-sm text-xs leading-5 text-white/80 sm:text-sm">
+                            {activeSlide.description}
+                        </p>
 
-                    <p className="mt-1 max-w-sm text-xs leading-5 text-slate-700 sm:text-sm">
-                        {activeSlide.description}
-                    </p>
-                </div>
-
-                {/* Indicators */}
-                <div className="absolute bottom-5 right-5 flex items-center gap-1.5">
-                    {slides.map((slide, index) => (
-                        <button
-                            key={slide.src}
-                            type="button"
-                            onClick={() => {
-                                setPreviousIndex(activeIndex);
-                                setActiveIndex(index);
-                            }}
-                            aria-label={`Show ${slide.title}`}
-                            aria-current={index === activeIndex}
-                            className={`h-1.5 rounded-full transition-all duration-1000 ease-in-out ${index === activeIndex
-                                ? "w-7 bg-brand-navy"
-                                : "w-1.5 bg-brand-navy/30 hover:bg-brand-navy/60"
-                                }`}
-                        />
-                    ))}
+                        <div className="mt-4 flex items-center gap-1.5">
+                            {slides.map((slide, index) => (
+                                <button
+                                    key={slide.src}
+                                    type="button"
+                                    onClick={() => {
+                                        setPreviousIndex(activeIndex);
+                                        setActiveIndex(index);
+                                    }}
+                                    aria-label={`Show ${slide.title}`}
+                                    aria-current={index === activeIndex}
+                                    className={`h-1 rounded-full transition-all duration-1000 ease-in-out ${index === activeIndex
+                                        ? "w-8 bg-white"
+                                        : "w-3 bg-white/35 hover:bg-white/60"
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -123,7 +133,7 @@ export function HeroSlideshow() {
                     from {
                         opacity: 0;
                     }
-
+ 
                     to {
                         opacity: 1;
                     }
@@ -132,3 +142,4 @@ export function HeroSlideshow() {
         </div>
     );
 }
+
