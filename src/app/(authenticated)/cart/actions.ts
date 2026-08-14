@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import Razorpay from "razorpay";
 
 export type CreateOrderInput = {
     addressId: string;
@@ -112,7 +113,7 @@ export async function createOrderAction(
                     id,
                     name
                 )
-            `,
+                `,
             )
             .in("id", catalogIds)
             .eq("is_active", true);
@@ -133,9 +134,9 @@ export async function createOrderAction(
         catalogRows.map((row) => [row.id, row]),
     );
 
-    const processedItems = [];
-
     let subtotal = 0;
+
+    const orderItems = [];
 
     for (const inputItem of input.items) {
         const catalogItem = catalogMap.get(
@@ -151,43 +152,39 @@ export async function createOrderAction(
 
         const unitPrice = Number(catalogItem.price);
 
-        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+        if (
+            !Number.isFinite(unitPrice) ||
+            unitPrice < 0
+        ) {
             return {
                 success: false,
                 error: "One of the selected items has an invalid price.",
             };
         }
 
-        const quantity = inputItem.quantity;
-        const totalPrice = unitPrice * quantity;
+        const totalPrice =
+            unitPrice * inputItem.quantity;
 
-        const catalog =
+        subtotal += totalPrice;
+
+        const catalogItemData =
             Array.isArray(catalogItem.catalog_items)
                 ? catalogItem.catalog_items[0]
                 : catalogItem.catalog_items;
 
-        const service =
-            Array.isArray(catalogItem.services)
-                ? catalogItem.services[0]
-                : catalogItem.services;
-
-        processedItems.push({
+        orderItems.push({
             service_catalog_item_id:
                 catalogItem.id,
             catalog_item_id:
                 catalogItem.catalog_item_id,
             article_name:
-                catalog?.name ?? "Laundry item",
+                catalogItemData?.name ?? "Laundry item",
             category_name:
-                service?.name ??
-                catalog?.category ??
-                "Laundry service",
+                catalogItemData?.category ?? "",
             unit_price: unitPrice,
-            quantity,
+            quantity: inputItem.quantity,
             total_price: totalPrice,
         });
-
-        subtotal += totalPrice;
     }
 
     /* ---------------------------------------------------------------------- */
@@ -196,11 +193,82 @@ export async function createOrderAction(
 
     const deliveryFee = subtotal > 0 ? 5 : 0;
     const taxAmount = 0;
+
     const totalAmount =
         subtotal + deliveryFee + taxAmount;
 
+    if (
+        !Number.isFinite(totalAmount) ||
+        totalAmount <= 0
+    ) {
+        return {
+            success: false,
+            error: "The order amount is invalid.",
+        };
+    }
+
     /* ---------------------------------------------------------------------- */
-    /* CREATE ORDER                                                           */
+    /* RAZORPAY CONFIG                                                        */
+    /* ---------------------------------------------------------------------- */
+
+    const razorpayKeyId =
+        process.env.RAZORPAY_KEY_ID;
+
+    const razorpayKeySecret =
+        process.env.RAZORPAY_KEY_SECRET;
+
+    if (!razorpayKeyId || !razorpayKeySecret) {
+        console.error(
+            "RAZORPAY ENVIRONMENT VARIABLES ARE MISSING",
+        );
+
+        return {
+            success: false,
+            error:
+                "Payment service is not configured. Please try again later.",
+        };
+    }
+
+    let razorpayOrder;
+    console.log("RAZORPAY CONFIG CHECK:", {
+        keyId: razorpayKeyId,
+        secretExists: Boolean(razorpayKeySecret),
+        secretLength: razorpayKeySecret?.length,
+    });
+
+    try {
+        const razorpay = new Razorpay({
+            key_id: razorpayKeyId,
+            key_secret: razorpayKeySecret,
+        });
+
+        const amountInPaise =
+            Math.round(totalAmount * 100);
+
+        razorpayOrder =
+            await razorpay.orders.create({
+                amount: amountInPaise,
+                currency: "INR",
+                receipt: `laundryos_${Date.now()}`,
+                notes: {
+                    customer_id: user.id,
+                },
+            });
+    } catch (error) {
+        console.error(
+            "RAZORPAY ORDER CREATION ERROR:",
+            error,
+        );
+
+        return {
+            success: false,
+            error:
+                "We couldn't initialize the payment. Please try again.",
+        };
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* CREATE SUPABASE ORDER                                                  */
     /* ---------------------------------------------------------------------- */
 
     const { data: order, error: orderError } =
@@ -217,19 +285,23 @@ export async function createOrderAction(
                 delivery_fee: deliveryFee,
                 tax_amount: taxAmount,
                 total_amount: totalAmount,
+                payment_status: "PENDING",
+                razorpay_order_id:
+                    razorpayOrder.id,
             })
             .select("id")
             .single();
 
     if (orderError || !order) {
         console.error(
-            "CREATE ORDER ERROR:",
+            "ORDER CREATION ERROR:",
             orderError,
         );
 
         return {
             success: false,
-            error: "We couldn't place your order. Please try again.",
+            error:
+                "We couldn't create your order. Please try again.",
         };
     }
 
@@ -237,31 +309,40 @@ export async function createOrderAction(
     /* CREATE ORDER ITEMS                                                     */
     /* ---------------------------------------------------------------------- */
 
-    const orderItems = processedItems.map((item) => ({
-        order_id: order.id,
-        ...item,
-    }));
+    const itemsToInsert = orderItems.map(
+        (item) => ({
+            ...item,
+            order_id: order.id,
+        }),
+    );
 
-    const { error: orderItemsError } =
+    const { error: itemsError } =
         await supabase
             .from("order_items")
-            .insert(orderItems);
+            .insert(itemsToInsert);
 
-    if (orderItemsError) {
+    if (itemsError) {
         console.error(
-            "CREATE ORDER ITEMS ERROR:",
-            orderItemsError,
+            "ORDER ITEMS CREATION ERROR:",
+            itemsError,
         );
+
+        // Remove the incomplete order.
+        await supabase
+            .from("orders")
+            .delete()
+            .eq("id", order.id)
+            .eq("customer_id", user.id);
 
         return {
             success: false,
             error:
-                "Your order could not be completed. Please contact support if you were charged.",
+                "We couldn't create the order items. Please try again.",
         };
     }
 
     /* ---------------------------------------------------------------------- */
-    /* INITIAL STATUS HISTORY                                                 */
+    /* STATUS HISTORY                                                         */
     /* ---------------------------------------------------------------------- */
 
     const { error: historyError } =
@@ -271,18 +352,45 @@ export async function createOrderAction(
                 order_id: order.id,
                 status: "PLACED",
                 changed_by: user.id,
-                notes: "Order placed by customer.",
+                notes: "Order created. Payment pending.",
             });
 
     if (historyError) {
         console.error(
-            "STATUS HISTORY ERROR:",
+            "ORDER STATUS HISTORY ERROR:",
             historyError,
         );
     }
 
+    /* ---------------------------------------------------------------------- */
+    /* RETURN PAYMENT DETAILS                                                 */
+    /* ---------------------------------------------------------------------- */
+
     return {
         success: true,
+        paymentRequired: true,
+
         orderId: order.id,
+
+        razorpayOrderId:
+            razorpayOrder.id,
+
+        razorpayKeyId,
+
+        amount:
+            Number(razorpayOrder.amount),
+
+        currency: "INR",
+
+        totalAmount,
+
+        customer: {
+            name:
+                user.user_metadata?.full_name ??
+                "",
+            email:
+                user.email ??
+                "",
+        },
     };
 }

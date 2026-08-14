@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useCart } from "@/context/CartContext";
 import { createOrderAction } from "../actions";
+import { verifyPaymentAction } from "../verify-payment-action";
 
 type Address = {
     id: string;
@@ -20,6 +21,12 @@ type Address = {
     pincode: string;
     is_default: boolean;
 };
+
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 export default function CheckoutForm({
     addresses,
@@ -55,6 +62,24 @@ export default function CheckoutForm({
     const today = new Date();
     const minDate = today.toISOString().split("T")[0];
 
+    async function loadRazorpayScript() {
+        if (window.Razorpay) {
+            return true;
+        }
+
+        return new Promise<boolean>((resolve) => {
+            const script = document.createElement("script");
+
+            script.src =
+                "https://checkout.razorpay.com/v1/checkout.js";
+
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+
+            document.body.appendChild(script);
+        });
+    }
+
     async function handleSubmit(
         event: React.FormEvent<HTMLFormElement>,
     ) {
@@ -84,28 +109,160 @@ export default function CheckoutForm({
 
         setIsSubmitting(true);
 
-        const result = await createOrderAction({
-            addressId,
-            pickupDate,
-            pickupSlot,
-            notes,
-            items: items.map((item) => ({
-                serviceCatalogItemId:
-                    item.serviceCatalogItemId,
-                quantity: item.quantity,
-            })),
-        });
+        try {
+            /*
+             * STEP 1
+             * Create the order on the server and get the
+             * Razorpay order details.
+             */
+            const result = await createOrderAction({
+                addressId,
+                pickupDate,
+                pickupSlot,
+                notes,
+                items: items.map((item) => ({
+                    serviceCatalogItemId:
+                        item.serviceCatalogItemId,
+                    quantity: item.quantity,
+                })),
+            });
 
-        if (!result.success) {
-            setError(result.error ?? "Something went wrong. Please Try again");
+            if (!result.success) {
+                setError(
+                    result.error ??
+                    "Something went wrong. Please try again.",
+                );
+                setIsSubmitting(false);
+                return;
+            }
+
+            /*
+             * STEP 2
+             * Make sure Razorpay Checkout is available.
+             */
+            const razorpayLoaded =
+                await loadRazorpayScript();
+
+            if (!razorpayLoaded) {
+                setError(
+                    "Unable to load the payment gateway. Please try again.",
+                );
+                setIsSubmitting(false);
+                return;
+            }
+
+            /*
+             * STEP 3
+             * Open Razorpay Checkout.
+             */
+            const options = {
+                key: result.razorpayKeyId,
+
+                amount: result.amount,
+
+                currency: result.currency,
+
+                name: "LaundryOS",
+
+                description: "Laundry pickup order",
+
+                order_id: result.razorpayOrderId,
+
+                prefill: {
+                    name: result.customer?.name ?? "",
+                    email: result.customer?.email ?? "",
+                },
+
+                theme: {
+                    color: "#00015E",
+                },
+
+                handler: async function (response: {
+                    razorpay_payment_id: string;
+                    razorpay_order_id: string;
+                    razorpay_signature: string;
+                }) {
+                    try {
+                        const verification =
+                            await verifyPaymentAction({
+                                orderId: result.orderId,
+                                razorpayOrderId:
+                                    response.razorpay_order_id,
+                                razorpayPaymentId:
+                                    response.razorpay_payment_id,
+                                razorpaySignature:
+                                    response.razorpay_signature,
+                            });
+                        console.log(
+                            "PAYMENT VERIFICATION RESULT:",
+                            verification,
+                        );
+
+                        if (!verification.success) {
+                            setError(
+                                verification.error ??
+                                "Payment verification failed.",
+                            );
+                            setIsSubmitting(false);
+                            return;
+                        }
+
+                        clearCart();
+
+                        router.push(
+                            `/orders/${verification.orderId}`,
+                        );
+
+                        router.refresh();
+                    } catch (error) {
+                        console.error(
+                            "PAYMENT VERIFICATION ERROR:",
+                            error,
+                        );
+
+                        setError(
+                            "Payment verification failed. Please contact support if money was deducted.",
+                        );
+
+                        setIsSubmitting(false);
+                    }
+                },
+
+                modal: {
+                    ondismiss: function () {
+                        setIsSubmitting(false);
+                    },
+                },
+            };
+
+            const razorpay = new window.Razorpay(
+                options,
+            );
+
+            razorpay.on(
+                "payment.failed",
+                function () {
+                    setError(
+                        "Payment failed. Your order has not been completed.",
+                    );
+
+                    setIsSubmitting(false);
+                },
+            );
+
+            razorpay.open();
+        } catch (err) {
+            console.error(
+                "CHECKOUT ERROR:",
+                err,
+            );
+
+            setError(
+                "Something went wrong while processing your order. Please try again.",
+            );
+
             setIsSubmitting(false);
-            return;
         }
-
-        clearCart();
-
-        router.push(`/orders/${result.orderId}`);
-        router.refresh();
     }
 
     if (!items.length) {
@@ -209,9 +366,7 @@ export default function CheckoutForm({
                                             </div>
 
                                             <p className="mt-1 text-sm font-medium text-slate-700">
-                                                {
-                                                    address.recipient_name
-                                                }{" "}
+                                                {address.recipient_name}{" "}
                                                 ·{" "}
                                                 {address.phone}
                                             </p>
@@ -234,9 +389,7 @@ export default function CheckoutForm({
                                                 {address.city},{" "}
                                                 {address.state}{" "}
                                                 -{" "}
-                                                {
-                                                    address.pincode
-                                                }
+                                                {address.pincode}
                                             </p>
                                         </div>
                                     </div>
@@ -427,13 +580,13 @@ export default function CheckoutForm({
                         className="mt-6 w-full rounded-xl bg-brand-navy px-5 py-3.5 text-sm font-bold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isSubmitting
-                            ? "Placing order..."
-                            : "Place order"}
+                            ? "Opening payment..."
+                            : "Proceed to payment"}
                     </button>
 
                     <p className="mt-3 text-center text-[11px] leading-4 text-slate-400">
-                        This is an estimated total. Final pricing
-                        may change after the laundry is inspected.
+                        You'll be redirected to Razorpay's secure
+                        payment window.
                     </p>
                 </div>
             </aside>
