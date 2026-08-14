@@ -41,6 +41,8 @@ export function AuthenticatedHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+      <div className="h-[3px] w-full bg-gradient-to-r from-brand-navy via-brand-blue-deep to-brand-orange" />
+
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Brand */}
         <div className="flex items-center gap-8">
@@ -65,12 +67,16 @@ export function AuthenticatedHeader({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive(link.href)
-                    ? "bg-slate-100 font-semibold text-brand-navy"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-brand-navy"
+                className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive(link.href)
+                  ? "bg-brand-blue-deep/10 font-semibold text-brand-navy"
+                  : "text-slate-600 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
                   }`}
               >
                 {link.label}
+
+                {isActive(link.href) && (
+                  <span className="absolute inset-x-3 -bottom-[13px] h-[2px] rounded-full bg-brand-orange" />
+                )}
               </Link>
             ))}
           </nav>
@@ -81,9 +87,9 @@ export function AuthenticatedHeader({
           {/* Cart */}
           <Link
             href="/cart"
-            className={`relative rounded-md px-3 py-2 text-sm font-semibold transition-colors ${isActive("/cart")
-                ? "bg-brand-navy text-white"
-                : "text-slate-600 hover:bg-slate-50 hover:text-brand-navy"
+            className={`relative rounded-md px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${isActive("/cart")
+              ? "bg-brand-navy text-white"
+              : "text-slate-600 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
               }`}
           >
             <span className="flex items-center gap-2">
@@ -113,6 +119,8 @@ export function AuthenticatedHeader({
             </span>
           ) : null}
 
+          <div className="h-5 w-px bg-slate-200" />
+
           <LogoutButton />
         </div>
 
@@ -120,7 +128,7 @@ export function AuthenticatedHeader({
         <div className="flex md:hidden">
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue-deep focus:ring-inset"
+            className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-brand-blue-deep/5 hover:text-brand-navy focus:outline-none focus:ring-2 focus:ring-brand-blue-deep focus:ring-inset"
             onClick={() => setIsMobileMenuOpen((open) => !open)}
             aria-expanded={isMobileMenuOpen}
             aria-label="Toggle main menu"
@@ -168,8 +176,8 @@ export function AuthenticatedHeader({
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive(link.href)
-                    ? "bg-slate-100 font-semibold text-brand-navy"
-                    : "text-slate-700 hover:bg-slate-50 hover:text-brand-navy"
+                  ? "bg-brand-blue-deep/10 font-semibold text-brand-navy"
+                  : "text-slate-700 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
                   }`}
               >
                 {link.label}
@@ -180,12 +188,25 @@ export function AuthenticatedHeader({
             <Link
               href="/cart"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive("/cart")
-                  ? "bg-brand-navy font-semibold text-white"
-                  : "text-slate-700 hover:bg-slate-50 hover:text-brand-navy"
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive("/cart")
+                ? "bg-brand-navy font-semibold text-white"
+                : "text-slate-700 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
                 }`}
             >
-              🛒 Cart
+              <svg
+                className="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.8"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835L5.76 6.75m0 0h14.49c.715 0 1.225.69.998 1.368l-1.35 4.05a1.5 1.5 0 01-1.423 1.026H8.01a1.5 1.5 0 01-1.423-1.026L5.76 6.75zm2.25 9.75a1.5 1.5 0 103 0m6 0a1.5 1.5 0 103 0"
+                />
+              </svg>
+              Cart
             </Link>
           </nav>
 

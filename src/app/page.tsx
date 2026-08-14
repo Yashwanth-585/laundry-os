@@ -37,12 +37,21 @@ export default async function Home() {
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <a
-              href="#services"
-              className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
-            >
-              Services
-            </a>
+            {isAuthenticated ? (
+              <Link
+                href="/services"
+                className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Services
+              </Link>
+            ) : (
+              <a
+                href="#services"
+                className="relative py-1 transition hover:text-brand-navy after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Services
+              </a>
+            )}
 
             <a
               href="#how-it-works"
@@ -558,12 +567,21 @@ export default async function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-slate-600">
-            <a
-              href="#services"
-              className="transition hover:text-brand-navy"
-            >
-              Services
-            </a>
+            {isAuthenticated ? (
+              <Link
+                href="/services"
+                className="transition hover:text-brand-navy"
+              >
+                Services
+              </Link>
+            ) : (
+              <a
+                href="#services"
+                className="transition hover:text-brand-navy"
+              >
+                Services
+              </a>
+            )}
 
             <a
               href="#how-it-works"
