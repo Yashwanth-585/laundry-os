@@ -9,15 +9,17 @@ import { LogoutButton } from "@/components/auth/logout-button";
 
 interface AuthenticatedHeaderProps {
   userEmail?: string;
+  role?: "admin" | "delivery_partner" | "customer" | "vendor";
 }
 
 export function AuthenticatedHeader({
   userEmail,
+  role = "customer",
 }: AuthenticatedHeaderProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navLinks = [
+  const customerNavLinks = [
     {
       href: "/services",
       label: "Services",
@@ -36,6 +38,56 @@ export function AuthenticatedHeader({
     },
   ];
 
+  const adminNavLinks = [
+    {
+      href: "/admin",
+      label: "Admin Dashboard",
+    },
+    {
+      href: "/admin/orders",
+      label: "Orders",
+    },
+    {
+      href: "/admin/delivery-partners",
+      label: "Delivery Partners",
+    },
+  ];
+
+  const riderNavLinks = [
+    {
+      href: "/rider",
+      label: "Rider Dashboard",
+    },
+  ];
+
+  const vendorNavLinks = [
+    {
+      href: "/vendor",
+      label: "Vendor Dashboard",
+    },
+  ];
+
+  const navLinks =
+    role === "admin"
+      ? adminNavLinks
+      : role === "delivery_partner"
+        ? riderNavLinks
+        : role === "vendor"
+          ? vendorNavLinks
+          : customerNavLinks;
+
+  const isAdmin = role === "admin";
+  const isRider = role === "delivery_partner";
+  const isVendor = role === "vendor";
+
+  const homeHref = isAdmin
+    ? "/admin"
+    : isRider
+      ? "/rider"
+      : isVendor
+        ? "/vendor"
+        : "/";
+
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
 
@@ -47,7 +99,7 @@ export function AuthenticatedHeader({
         {/* Brand */}
         <div className="flex items-center gap-8">
           <Link
-            href="/"
+            href={homeHref}
             className="flex items-center gap-2"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -84,31 +136,33 @@ export function AuthenticatedHeader({
 
         {/* Desktop right side */}
         <div className="hidden items-center gap-4 md:flex">
-          {/* Cart */}
-          <Link
-            href="/cart"
-            className={`relative rounded-md px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${isActive("/cart")
-              ? "bg-brand-navy text-white"
-              : "text-slate-600 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
-              }`}
-          >
-            <span className="flex items-center gap-2">
-              <svg
-                className="size-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.8"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835L5.76 6.75m0 0h14.49c.715 0 1.225.69.998 1.368l-1.35 4.05a1.5 1.5 0 01-1.423 1.026H8.01a1.5 1.5 0 01-1.423-1.026L5.76 6.75zm2.25 9.75a1.5 1.5 0 103 0m6 0a1.5 1.5 0 103 0"
-                />
-              </svg>
-              Cart
-            </span>
-          </Link>
+          {/* Customer Cart */}
+          {role === "customer" && (
+            <Link
+              href="/cart"
+              className={`relative rounded-md px-3 py-2 text-sm font-semibold shadow-sm transition-colors ${isActive("/cart")
+                ? "bg-brand-navy text-white"
+                : "text-slate-600 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
+                }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg
+                  className="size-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 3h1.386c.51 0 .955.343 1.087.835L5.76 6.75m0 0h14.49c.715 0 1.225.69.998 1.368l-1.35 4.05a1.5 1.5 0 01-1.423 1.026H8.01a1.5 1.5 0 01-1.423-1.026L5.76 6.75zm2.25 9.75a1.5 1.5 0 103 0m6 0a1.5 1.5 0 103 0"
+                  />
+                </svg>
+                Cart
+              </span>
+            </Link>
+          )}
 
           {userEmail ? (
             <span
@@ -184,30 +238,32 @@ export function AuthenticatedHeader({
               </Link>
             ))}
 
-            {/* Mobile Cart */}
-            <Link
-              href="/cart"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive("/cart")
-                ? "bg-brand-navy font-semibold text-white"
-                : "text-slate-700 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
-                }`}
-            >
-              <svg
-                className="size-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.8"
-                stroke="currentColor"
+            {/* Mobile Cart — customer only */}
+            {role === "customer" && (
+              <Link
+                href="/cart"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium transition-colors ${isActive("/cart")
+                  ? "bg-brand-navy font-semibold text-white"
+                  : "text-slate-700 hover:bg-brand-blue-deep/5 hover:text-brand-navy"
+                  }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835L5.76 6.75m0 0h14.49c.715 0 1.225.69.998 1.368l-1.35 4.05a1.5 1.5 0 01-1.423 1.026H8.01a1.5 1.5 0 01-1.423-1.026L5.76 6.75zm2.25 9.75a1.5 1.5 0 103 0m6 0a1.5 1.5 0 103 0"
-                />
-              </svg>
-              Cart
-            </Link>
+                <svg
+                  className="size-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.25 3h1.386c.51 0 .955.343 1.087.835L5.76 6.75m0 0h14.49c.715 0 1.225.69.998 1.368l-1.35 4.05a1.5 1.5 0 01-1.423 1.026H8.01a1.5 1.5 0 01-1.423-1.026L5.76 6.75zm2.25 9.75a1.5 1.5 0 103 0m6 0a1.5 1.5 0 103 0"
+                  />
+                </svg>
+                Cart
+              </Link>
+            )}
           </nav>
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3">

@@ -45,6 +45,79 @@ export async function createOrderAction(
         };
     }
 
+    /* ---------------------------------------------------------------------- */
+    /* PICKUP SLOT VALIDATION                                                 */
+    /* ---------------------------------------------------------------------- */
+
+    const validTimeSlots: Record<string, number> = {
+        "9:00 AM - 12:00 PM": 9,
+        "12:00 PM - 3:00 PM": 12,
+        "3:00 PM - 6:00 PM": 15,
+        "6:00 PM - 9:00 PM": 18,
+    };
+
+    const selectedSlotStartHour =
+        validTimeSlots[input.pickupSlot];
+
+    if (selectedSlotStartHour === undefined) {
+        return {
+            success: false,
+            error: "Please select a valid pickup time slot.",
+        };
+    }
+
+    /*
+     * The application operates in India, so use IST explicitly.
+     * This avoids relying on the server's timezone (for example,
+     * Vercel may run in UTC).
+     */
+
+    const now = new Date();
+
+    const indiaDateFormatter =
+        new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        });
+
+    const indiaTimeFormatter =
+        new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+
+    const currentIndiaDate =
+        indiaDateFormatter.format(now);
+
+    const currentIndiaTime =
+        indiaTimeFormatter.format(now);
+
+    const currentIndiaHour =
+        Number(currentIndiaTime.split(":")[0]);
+
+    if (input.pickupDate < currentIndiaDate) {
+        return {
+            success: false,
+            error:
+                "Please select today or a future pickup date.",
+        };
+    }
+
+    if (
+        input.pickupDate === currentIndiaDate &&
+        currentIndiaHour >= selectedSlotStartHour
+    ) {
+        return {
+            success: false,
+            error:
+                "The selected pickup time slot has already passed. Please choose another slot.",
+        };
+    }
+
     if (!input.items?.length) {
         return {
             success: false,
@@ -60,7 +133,8 @@ export async function createOrderAction(
         ) {
             return {
                 success: false,
-                error: "Your cart contains an invalid quantity.",
+                error:
+                    "Your cart contains an invalid quantity.",
             };
         }
     }
@@ -126,7 +200,8 @@ export async function createOrderAction(
 
         return {
             success: false,
-            error: "We couldn't validate your cart. Please try again.",
+            error:
+                "We couldn't validate your cart. Please try again.",
         };
     }
 
@@ -146,7 +221,8 @@ export async function createOrderAction(
         if (!catalogItem) {
             return {
                 success: false,
-                error: "One or more items in your cart are no longer available.",
+                error:
+                    "One or more items in your cart are no longer available.",
             };
         }
 
@@ -158,7 +234,8 @@ export async function createOrderAction(
         ) {
             return {
                 success: false,
-                error: "One of the selected items has an invalid price.",
+                error:
+                    "One of the selected items has an invalid price.",
             };
         }
 
@@ -230,6 +307,7 @@ export async function createOrderAction(
     }
 
     let razorpayOrder;
+
     console.log("RAZORPAY CONFIG CHECK:", {
         keyId: razorpayKeyId,
         secretExists: Boolean(razorpayKeySecret),

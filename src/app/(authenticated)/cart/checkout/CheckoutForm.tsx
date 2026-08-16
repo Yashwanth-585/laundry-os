@@ -28,6 +28,25 @@ declare global {
     }
 }
 
+const pickupSlots = [
+    {
+        value: "9:00 AM - 12:00 PM",
+        endHour: 12,
+    },
+    {
+        value: "12:00 PM - 3:00 PM",
+        endHour: 15,
+    },
+    {
+        value: "3:00 PM - 6:00 PM",
+        endHour: 18,
+    },
+    {
+        value: "6:00 PM - 9:00 PM",
+        endHour: 21,
+    },
+];
+
 export default function CheckoutForm({
     addresses,
 }: {
@@ -60,7 +79,47 @@ export default function CheckoutForm({
     const [error, setError] = useState("");
 
     const today = new Date();
-    const minDate = today.toISOString().split("T")[0];
+
+    /*
+     * Use local date instead of UTC.
+     * This matters because the pickup slots are based on
+     * the customer's local time.
+     */
+    const minDate =
+        `${today.getFullYear()}-${String(
+            today.getMonth() + 1,
+        ).padStart(2, "0")}-${String(
+            today.getDate(),
+        ).padStart(2, "0")}`;
+
+    /*
+     * Returns the slots that are still available for the
+     * selected date.
+     *
+     * Future dates:
+     *   -> all slots available
+     *
+     * Today:
+     *   -> hide slots whose pickup window has already ended
+     */
+    function getAvailablePickupSlots() {
+        if (!pickupDate) {
+            return pickupSlots;
+        }
+
+        if (pickupDate !== minDate) {
+            return pickupSlots;
+        }
+
+        const currentHour = today.getHours();
+
+        return pickupSlots.filter(
+            (slot) => currentHour < slot.endHour,
+        );
+    }
+
+    const availablePickupSlots =
+        getAvailablePickupSlots();
 
     async function loadRazorpayScript() {
         if (window.Razorpay) {
@@ -193,6 +252,7 @@ export default function CheckoutForm({
                                 razorpaySignature:
                                     response.razorpay_signature,
                             });
+
                         console.log(
                             "PAYMENT VERIFICATION RESULT:",
                             verification,
@@ -330,8 +390,8 @@ export default function CheckoutForm({
                                 <label
                                     key={address.id}
                                     className={`cursor-pointer rounded-xl border p-4 transition ${addressId === address.id
-                                        ? "border-brand-blue-deep bg-brand-blue-deep/5 ring-2 ring-brand-blue-deep/10"
-                                        : "border-slate-200 hover:border-slate-300"
+                                            ? "border-brand-blue-deep bg-brand-blue-deep/5 ring-2 ring-brand-blue-deep/10"
+                                            : "border-slate-200 hover:border-slate-300"
                                         }`}
                                 >
                                     <div className="flex gap-3">
@@ -427,11 +487,18 @@ export default function CheckoutForm({
                                 type="date"
                                 min={minDate}
                                 value={pickupDate}
-                                onChange={(event) =>
+                                onChange={(event) => {
                                     setPickupDate(
                                         event.target.value,
-                                    )
-                                }
+                                    );
+
+                                    /*
+                                     * Reset the selected slot when
+                                     * changing the date so we don't
+                                     * keep an invalid slot selected.
+                                     */
+                                    setPickupSlot("");
+                                }}
                                 className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand-blue-deep focus:ring-2 focus:ring-brand-blue-deep/10"
                             />
                         </div>
@@ -458,22 +525,27 @@ export default function CheckoutForm({
                                     Select a time slot
                                 </option>
 
-                                <option value="9:00 AM - 12:00 PM">
-                                    9:00 AM - 12:00 PM
-                                </option>
-
-                                <option value="12:00 PM - 3:00 PM">
-                                    12:00 PM - 3:00 PM
-                                </option>
-
-                                <option value="3:00 PM - 6:00 PM">
-                                    3:00 PM - 6:00 PM
-                                </option>
-
-                                <option value="6:00 PM - 9:00 PM">
-                                    6:00 PM - 9:00 PM
-                                </option>
+                                {availablePickupSlots.map(
+                                    (slot) => (
+                                        <option
+                                            key={slot.value}
+                                            value={slot.value}
+                                        >
+                                            {slot.value}
+                                        </option>
+                                    ),
+                                )}
                             </select>
+
+                            {pickupDate === minDate &&
+                                availablePickupSlots.length ===
+                                0 && (
+                                    <p className="mt-2 text-xs font-medium text-red-600">
+                                        No pickup slots are available
+                                        for today. Please choose
+                                        another date.
+                                    </p>
+                                )}
                         </div>
                     </div>
                 </section>
@@ -575,7 +647,8 @@ export default function CheckoutForm({
                         type="submit"
                         disabled={
                             isSubmitting ||
-                            addresses.length === 0
+                            addresses.length === 0 ||
+                            !pickupSlot
                         }
                         className="mt-6 w-full rounded-xl bg-brand-navy px-5 py-3.5 text-sm font-bold text-white transition hover:bg-brand-blue-deep disabled:cursor-not-allowed disabled:opacity-50"
                     >
