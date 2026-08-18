@@ -434,18 +434,25 @@ export default async function AdminDashboardPage() {
                             Manage →
                         </span>
                     </Link>
-
                     <Link
                         href="/admin/staff"
                         className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue-deep/30 hover:shadow-md"
                     >
-                        <p className="text-sm font-bold text-slate-900">Staff Management</p>
-                        <p className="mt-1 text-xs text-slate-500">Invite and manage facility staff</p>
-                        <span className="mt-4 inline-block text-sm font-bold text-brand-blue-deep">Manage →</span>
+                        <p className="text-sm font-bold text-slate-900">
+                            Staff Management
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                            Invite and manage facility staff
+                        </p>
+
+                        <span className="mt-4 inline-block text-sm font-bold text-brand-blue-deep">
+                            Manage →
+                        </span>
                     </Link>
 
-                    <button
-                        type="button"
+                    <Link
+                        href="/admin/pricing"
                         className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue-deep/30 hover:shadow-md"
                     >
                         <p className="text-sm font-bold text-slate-900">
@@ -456,10 +463,11 @@ export default async function AdminDashboardPage() {
                             Manage catalogue and prices
                         </p>
 
-                        <span className="mt-4 inline-block text-sm font-bold text-slate-400">
-                            Coming next →
+                        <span className="mt-4 inline-block text-sm font-bold text-brand-blue-deep">
+                            Manage →
                         </span>
-                    </button>
+                    </Link>
+
                 </section>
             </div>
         </main>
