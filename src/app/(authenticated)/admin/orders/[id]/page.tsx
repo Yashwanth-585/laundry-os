@@ -1,4 +1,5 @@
 import PickupAssignment from "./PickupAssignment";
+import DeliveryAssignment from "./DeliveryAssignment";
 import OrderStatusControl from "./OrderStatusControl";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
@@ -175,6 +176,42 @@ export default async function AdminOrderDetailPage({
         console.error(
             "ADMIN PICKUP TASK ERROR:",
             pickupTaskError,
+        );
+    }
+
+    /*
+ * FINAL DELIVERY TASK
+ */
+    const { data: deliveryTask, error: deliveryTaskError } =
+        await supabase
+            .from("delivery_tasks")
+            .select(
+                `
+            id,
+            order_id,
+            delivery_partner_id,
+            task_type,
+            status,
+            assigned_at,
+            accepted_at,
+            started_at,
+            completed_at,
+            delivery_otp,
+            delivery_otp_verified_at,
+            notes,
+            photo_urls,
+            created_at,
+            updated_at
+            `,
+            )
+            .eq("order_id", id)
+            .eq("task_type", "DROP")
+            .maybeSingle();
+
+    if (deliveryTaskError) {
+        console.error(
+            "ADMIN DELIVERY TASK ERROR:",
+            deliveryTaskError,
         );
     }
 
@@ -541,6 +578,17 @@ export default async function AdminOrderDetailPage({
                             deliveryPartners={partnersForAssignment}
                         />
 
+                        {/* FINAL DELIVERY ASSIGNMENT */}
+                        {order.status === "READY" ||
+                            order.status === "OUT_FOR_DELIVERY" ||
+                            order.status === "DELIVERED" ? (
+                            <DeliveryAssignment
+                                orderId={order.id}
+                                task={deliveryTask}
+                                deliveryPartners={partnersForAssignment}
+                            />
+                        ) : null}
+
                         {/* ORDER STATUS CONTROL */}
                         <OrderStatusControl
                             orderId={order.id}
@@ -586,8 +634,8 @@ export default async function AdminOrderDetailPage({
 
                                 <span
                                     className={`rounded-full px-3 py-1 text-xs font-bold ${order.payment_status === "PAID"
-                                            ? "bg-emerald-50 text-emerald-700"
-                                            : "bg-amber-50 text-amber-700"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-amber-50 text-amber-700"
                                         }`}
                                 >
                                     {order.payment_status}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { HeroSlideshow } from "@/components/home/hero-slideshow";
+import ReviewSection from "@/components/home/ReviewSection";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -19,7 +20,9 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 scroll-smooth">
-      {/* Navigation Header */}
+      {/* =========================================================
+          NAVIGATION HEADER
+      ========================================================== */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <div className="h-[3px] w-full bg-gradient-to-r from-brand-navy via-brand-blue-deep to-brand-orange" />
 
@@ -114,7 +117,6 @@ export default async function Home() {
             HERO
         ========================================================== */}
         <section className="relative overflow-hidden bg-gradient-to-r from-white via-sky-50 to-sky-200">
-          {/* Ambient background */}
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute -left-24 -top-24 size-[28rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
             <div className="absolute -right-24 top-40 size-[24rem] rounded-full bg-brand-orange/10 blur-3xl" />
@@ -204,7 +206,6 @@ export default async function Home() {
           id="services"
           className="relative overflow-hidden border-t border-slate-200 bg-sky-100/70 py-16 sm:py-24"
         >
-          {/* Ambient background to match hero treatment */}
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute -right-32 -top-16 size-[26rem] rounded-full bg-brand-blue-deep/10 blur-3xl" />
             <div className="absolute -left-32 bottom-0 size-[22rem] rounded-full bg-brand-orange/5 blur-3xl" />
@@ -385,7 +386,6 @@ export default async function Home() {
             </div>
 
             <div className="relative mt-14">
-              {/* Connecting line — only meaningful once cards sit in a single row */}
               <div className="pointer-events-none absolute inset-x-6 top-10 hidden border-t border-dashed border-slate-300 lg:block" />
 
               <div className="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -528,8 +528,45 @@ export default async function Home() {
                 ))}
               </div>
             </div>
+
+            {/* =====================================================
+                RIDER APPLICATION
+            ====================================================== */}
+            {isAuthenticated && (
+              <div className="mt-10 rounded-2xl border border-brand-blue-deep/20 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-orange">
+                      Join the WashLand team
+                    </p>
+
+                    <h3 className="mt-1 text-lg font-extrabold text-brand-navy">
+                      Want to become a delivery partner?
+                    </h3>
+
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+                      Apply to become a WashLand rider and help us provide
+                      reliable doorstep pickup and delivery to our customers.
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/rider/apply"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-navy px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-deep"
+                  >
+                    Apply to Become a Rider
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </section>
+
+        {/* =========================================================
+            CUSTOMER REVIEWS
+        ========================================================== */}
+        <ReviewSection />
 
         {/* =========================================================
             FINAL CTA
@@ -612,6 +649,15 @@ export default async function Home() {
             >
               Why WashLand
             </a>
+
+            {isAuthenticated && (
+              <Link
+                href="/rider/apply"
+                className="transition hover:text-brand-navy"
+              >
+                Become a Rider
+              </Link>
+            )}
 
             {!isAuthenticated && (
               <>

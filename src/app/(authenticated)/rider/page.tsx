@@ -35,7 +35,10 @@ export default async function RiderDashboardPage() {
         redirect("/login");
     }
 
-    // Make sure the logged-in user is actually a delivery partner.
+    // ----------------------------------------------------------
+    // VERIFY DELIVERY PARTNER
+    // ----------------------------------------------------------
+
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id, full_name, role")
@@ -50,7 +53,6 @@ export default async function RiderDashboardPage() {
         redirect("/dashboard");
     }
 
-    // Find the delivery partner record belonging to this profile.
     const { data: deliveryPartner, error: partnerError } =
         await supabase
             .from("delivery_partners")
@@ -89,6 +91,10 @@ export default async function RiderDashboardPage() {
         );
     }
 
+    // ----------------------------------------------------------
+    // FETCH RIDER TASKS
+    // ----------------------------------------------------------
+
     const { data: tasks, error: tasksError } = await supabase
         .from("delivery_tasks")
         .select(
@@ -117,9 +123,10 @@ export default async function RiderDashboardPage() {
 
     const allTasks = tasks ?? [];
 
+    // BOTH pickup and delivery tasks.
     const assignedTasks = allTasks.filter(
         (task) =>
-            task.task_type === "PICKUP" &&
+            ["PICKUP", "DROP"].includes(task.task_type) &&
             task.status === "ASSIGNED",
     );
 
@@ -132,7 +139,6 @@ export default async function RiderDashboardPage() {
         <main className="min-h-screen bg-sky-100/70">
             <div className="mx-auto max-w-6xl px-4 py-8 pb-20 sm:px-6 lg:px-8">
 
-                {/* Header */}
                 {/* Header */}
                 <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -152,7 +158,6 @@ export default async function RiderDashboardPage() {
                         </p>
                     </div>
 
-                    {/* Availability Toggle */}
                     <AvailabilityToggle
                         initialAvailability={deliveryPartner.is_available}
                     />
@@ -160,9 +165,11 @@ export default async function RiderDashboardPage() {
 
                 {/* Stats */}
                 <section className="mt-8 grid gap-4 sm:grid-cols-3">
+
+                    {/* Assigned */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Assigned pickups
+                            Assigned tasks
                         </p>
 
                         <p className="mt-3 text-3xl font-extrabold text-brand-orange">
@@ -174,6 +181,7 @@ export default async function RiderDashboardPage() {
                         </p>
                     </div>
 
+                    {/* Active */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Active tasks
@@ -188,6 +196,7 @@ export default async function RiderDashboardPage() {
                         </p>
                     </div>
 
+                    {/* Account */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Account
@@ -195,9 +204,9 @@ export default async function RiderDashboardPage() {
 
                         <p
                             className={`mt-3 text-lg font-extrabold ${deliveryPartner.is_active &&
-                                deliveryPartner.is_approved
-                                ? "text-emerald-600"
-                                : "text-red-600"
+                                    deliveryPartner.is_approved
+                                    ? "text-emerald-600"
+                                    : "text-red-600"
                                 }`}
                         >
                             {deliveryPartner.is_active &&
@@ -212,15 +221,17 @@ export default async function RiderDashboardPage() {
                     </div>
                 </section>
 
-                {/* Assigned pickups */}
+                {/* Assigned Tasks */}
                 <section className="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
+
                     <div className="border-b border-slate-100 px-6 py-5">
                         <h2 className="font-bold text-slate-900">
-                            Assigned Pickups
+                            Assigned Tasks
                         </h2>
 
                         <p className="mt-1 text-xs text-slate-500">
-                            Pickup tasks assigned to you by the admin.
+                            Pickup and delivery tasks assigned to you by the
+                            admin.
                         </p>
                     </div>
 
@@ -232,15 +243,30 @@ export default async function RiderDashboardPage() {
                                     className="flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
                                 >
                                     <div>
-                                        <p className="text-sm font-bold text-slate-900">
-                                            Order #
-                                            {task.order_id
-                                                .slice(0, 8)
-                                                .toUpperCase()}
-                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-bold text-slate-900">
+                                                Order #
+                                                {task.order_id
+                                                    .slice(0, 8)
+                                                    .toUpperCase()}
+                                            </p>
+
+                                            {/* TASK TYPE */}
+                                            {task.task_type === "PICKUP" ? (
+                                                <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">
+                                                    PICKUP
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700">
+                                                    DELIVERY
+                                                </span>
+                                            )}
+                                        </div>
 
                                         <p className="mt-1 text-xs text-slate-500">
-                                            Pickup task
+                                            {task.task_type === "PICKUP"
+                                                ? "Customer → Facility"
+                                                : "Facility → Customer"}
                                         </p>
 
                                         <p className="mt-2 text-xs text-slate-400">
@@ -250,7 +276,12 @@ export default async function RiderDashboardPage() {
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <span className="inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                                        <span
+                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${task.task_type === "PICKUP"
+                                                    ? "border border-amber-100 bg-amber-50 text-amber-700"
+                                                    : "border border-purple-100 bg-purple-50 text-purple-700"
+                                                }`}
+                                        >
                                             {formatStatus(task.status)}
                                         </span>
 
@@ -267,12 +298,12 @@ export default async function RiderDashboardPage() {
                     ) : (
                         <div className="px-6 py-12 text-center">
                             <p className="text-sm font-semibold text-slate-700">
-                                No assigned pickups
+                                No assigned tasks
                             </p>
 
                             <p className="mt-1 text-xs text-slate-500">
-                                New pickup assignments from the admin will
-                                appear here.
+                                New pickup or delivery assignments from the
+                                admin will appear here.
                             </p>
                         </div>
                     )}
@@ -285,15 +316,14 @@ export default async function RiderDashboardPage() {
                     </h2>
 
                     <div className="mt-4 grid gap-4 sm:grid-cols-3">
+
                         <div>
                             <p className="text-xs text-slate-400">
                                 Active
                             </p>
 
                             <p className="mt-1 text-sm font-bold text-slate-800">
-                                {deliveryPartner.is_active
-                                    ? "Yes"
-                                    : "No"}
+                                {deliveryPartner.is_active ? "Yes" : "No"}
                             </p>
                         </div>
 

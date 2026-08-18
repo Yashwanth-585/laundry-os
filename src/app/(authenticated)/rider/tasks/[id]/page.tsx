@@ -2,9 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+
 import { AcceptPickupButton } from "@/components/rider/accept-pickup-button";
 import { StartPickupButton } from "@/components/rider/start-pickup-button";
 import { VerifyPickupOtp } from "@/components/rider/verify-pickup-otp";
+
+import { AcceptDeliveryButton } from "@/components/rider/AcceptDeliveryButton";
+import { StartDeliveryButton } from "@/components/rider/StartDeliveryButton";
+import { VerifyDeliveryOtp } from "@/components/rider/VerifyDeliveryOtp";
 
 function formatStatus(status: string) {
     return status
@@ -34,6 +39,10 @@ export default async function RiderTaskPage({
 
     const supabase = await createClient();
 
+    // ----------------------------------------------------------
+    // AUTH
+    // ----------------------------------------------------------
+
     const {
         data: { user },
         error: authError,
@@ -43,7 +52,10 @@ export default async function RiderTaskPage({
         redirect("/login");
     }
 
-    // Verify delivery partner account.
+    // ----------------------------------------------------------
+    // DELIVERY PARTNER
+    // ----------------------------------------------------------
+
     const { data: partner, error: partnerError } = await supabase
         .from("delivery_partners")
         .select("id, is_active, is_approved")
@@ -59,7 +71,10 @@ export default async function RiderTaskPage({
         redirect("/dashboard");
     }
 
-    // Fetch only this rider's task.
+    // ----------------------------------------------------------
+    // TASK
+    // ----------------------------------------------------------
+
     const { data: task, error: taskError } = await supabase
         .from("delivery_tasks")
         .select(
@@ -74,6 +89,7 @@ export default async function RiderTaskPage({
             started_at,
             completed_at,
             pickup_otp_verified_at,
+            delivery_otp_verified_at,
             notes,
             orders (
                 id,
@@ -99,7 +115,14 @@ export default async function RiderTaskPage({
         redirect("/rider");
     }
 
-    if (task.task_type !== "PICKUP") {
+    // ----------------------------------------------------------
+    // DETERMINE TASK TYPE
+    // ----------------------------------------------------------
+
+    const isPickup = task.task_type === "PICKUP";
+    const isDelivery = task.task_type === "DROP";
+
+    if (!isPickup && !isDelivery) {
         redirect("/rider");
     }
 
@@ -117,8 +140,8 @@ export default async function RiderTaskPage({
                         </h1>
 
                         <p className="mt-2 text-sm text-slate-600">
-                            The pickup task exists, but its associated order
-                            could not be loaded.
+                            The task exists, but its associated order could
+                            not be loaded.
                         </p>
 
                         <Link
@@ -133,7 +156,10 @@ export default async function RiderTaskPage({
         );
     }
 
-    // Fetch the pickup address separately.
+    // ----------------------------------------------------------
+    // ADDRESS
+    // ----------------------------------------------------------
+
     const { data: address, error: addressError } = await supabase
         .from("addresses")
         .select(
@@ -162,6 +188,7 @@ export default async function RiderTaskPage({
     return (
         <main className="min-h-screen bg-sky-100/70">
             <div className="mx-auto max-w-4xl px-4 py-8 pb-20 sm:px-6 lg:px-8">
+
                 {/* Back */}
                 <Link
                     href="/rider"
@@ -170,12 +197,22 @@ export default async function RiderTaskPage({
                     ← Back to Rider Dashboard
                 </Link>
 
-                {/* Header */}
+                {/* -------------------------------------------------- */}
+                {/* HEADER */}
+                {/* -------------------------------------------------- */}
+
                 <header className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
-                                Pickup Task
+                            <p
+                                className={`text-xs font-bold uppercase tracking-wider ${isPickup
+                                    ? "text-brand-blue-deep"
+                                    : "text-purple-600"
+                                    }`}
+                            >
+                                {isPickup
+                                    ? "Pickup Task"
+                                    : "Delivery Task"}
                             </p>
 
                             <h1 className="mt-2 text-2xl font-extrabold text-brand-navy">
@@ -186,56 +223,105 @@ export default async function RiderTaskPage({
                             </h1>
 
                             <p className="mt-2 text-sm text-slate-500">
+                                {isPickup
+                                    ? "Customer → Facility"
+                                    : "Facility → Customer"}
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
                                 Assigned {formatDate(task.assigned_at)}
                             </p>
                         </div>
 
-                        <span className="inline-flex w-fit rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
-                            {formatStatus(task.status)}
-                        </span>
+                        <div className="flex flex-col items-start gap-2 sm:items-end">
+                            <span
+                                className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${isPickup
+                                    ? "border border-amber-100 bg-amber-50 text-amber-700"
+                                    : "border border-purple-100 bg-purple-50 text-purple-700"
+                                    }`}
+                            >
+                                {formatStatus(task.status)}
+                            </span>
+
+                            <span
+                                className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${isPickup
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "bg-purple-50 text-purple-700"
+                                    }`}
+                            >
+                                {isPickup ? "PICKUP" : "DELIVERY"}
+                            </span>
+                        </div>
                     </div>
                 </header>
 
-                {/* Pickup schedule */}
+                {/* -------------------------------------------------- */}
+                {/* SCHEDULE */}
+                {/* -------------------------------------------------- */}
+
                 <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="font-bold text-slate-900">
-                        Pickup Schedule
+                        {isPickup
+                            ? "Pickup Schedule"
+                            : "Delivery Information"}
                     </h2>
 
                     <div className="mt-5 grid gap-5 sm:grid-cols-2">
+
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                Pickup date
+                                Order status
                             </p>
 
                             <p className="mt-1 text-sm font-bold text-slate-800">
-                                {new Date(
-                                    `${order.pickup_date}T00:00:00`,
-                                ).toLocaleDateString("en-IN", {
-                                    weekday: "long",
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                })}
+                                {formatStatus(order.status)}
                             </p>
                         </div>
 
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                Pickup slot
+                                {isPickup
+                                    ? "Pickup slot"
+                                    : "Task type"}
                             </p>
 
                             <p className="mt-1 text-sm font-bold text-slate-800">
-                                {order.pickup_slot}
+                                {isPickup
+                                    ? order.pickup_slot
+                                    : "Customer Delivery"}
                             </p>
                         </div>
+
+                        {order.pickup_date ? (
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    Pickup date
+                                </p>
+
+                                <p className="mt-1 text-sm font-bold text-slate-800">
+                                    {new Date(
+                                        `${order.pickup_date}T00:00:00`,
+                                    ).toLocaleDateString("en-IN", {
+                                        weekday: "long",
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                    })}
+                                </p>
+                            </div>
+                        ) : null}
                     </div>
                 </section>
 
-                {/* Customer / address */}
+                {/* -------------------------------------------------- */}
+                {/* CUSTOMER / ADDRESS */}
+                {/* -------------------------------------------------- */}
+
                 <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 className="font-bold text-slate-900">
-                        Pickup Location
+                        {isPickup
+                            ? "Pickup Location"
+                            : "Customer Delivery Location"}
                     </h2>
 
                     {address ? (
@@ -284,12 +370,15 @@ export default async function RiderTaskPage({
                         </div>
                     ) : (
                         <p className="mt-4 text-sm text-red-600">
-                            Pickup address could not be loaded.
+                            Customer address could not be loaded.
                         </p>
                     )}
                 </section>
 
-                {/* Order notes */}
+                {/* -------------------------------------------------- */}
+                {/* NOTES */}
+                {/* -------------------------------------------------- */}
+
                 {order.notes || task.notes ? (
                     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h2 className="font-bold text-slate-900">
@@ -322,84 +411,186 @@ export default async function RiderTaskPage({
                     </section>
                 ) : null}
 
-                {/* Task action */}
-                <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 className="font-bold text-slate-900">
-                        Pickup Action
-                    </h2>
+                {/* -------------------------------------------------- */}
+                {/* PICKUP ACTIONS */}
+                {/* -------------------------------------------------- */}
 
-                    {task.status === "ASSIGNED" ? (
-                        <>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                Accept this pickup when you are ready to take
-                                responsibility for the assignment.
-                            </p>
+                {isPickup ? (
+                    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="font-bold text-slate-900">
+                            Pickup Action
+                        </h2>
 
-                            <div className="mt-5">
-                                <AcceptPickupButton taskId={task.id} />
+                        {task.status === "ASSIGNED" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Accept this pickup when you are ready to
+                                    take responsibility for the assignment.
+                                </p>
+
+                                <div className="mt-5">
+                                    <AcceptPickupButton
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : task.status === "ACCEPTED" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Start the pickup when you have reached the
+                                    customer's location.
+                                </p>
+
+                                <div className="mt-5">
+                                    <StartPickupButton
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : task.status === "IN_PROGRESS" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Ask the customer for the 6-digit pickup OTP
+                                    and enter it below to complete the pickup.
+                                </p>
+
+                                <div className="mt-5">
+                                    <VerifyPickupOtp
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                                <p className="text-sm font-semibold text-slate-700">
+                                    This pickup is currently{" "}
+                                    {formatStatus(task.status)}.
+                                </p>
+
+                                {task.accepted_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Accepted{" "}
+                                        {formatDate(task.accepted_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.started_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Started{" "}
+                                        {formatDate(task.started_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.completed_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Completed{" "}
+                                        {formatDate(task.completed_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.pickup_otp_verified_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        OTP verified{" "}
+                                        {formatDate(
+                                            task.pickup_otp_verified_at,
+                                        )}
+                                    </p>
+                                ) : null}
                             </div>
-                        </>
-                    ) : task.status === "ACCEPTED" ? (
-                        <>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                Start the pickup when you have reached the
-                                customer's location.
-                            </p>
+                        )}
+                    </section>
+                ) : null}
 
-                            <div className="mt-5">
-                                <StartPickupButton taskId={task.id} />
+                {/* -------------------------------------------------- */}
+                {/* DELIVERY ACTIONS */}
+                {/* -------------------------------------------------- */}
+
+                {isDelivery ? (
+                    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="font-bold text-slate-900">
+                            Delivery Action
+                        </h2>
+
+                        {task.status === "ASSIGNED" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Accept this delivery when you are ready to
+                                    take responsibility for the assignment.
+                                </p>
+
+                                <div className="mt-5">
+                                    <AcceptDeliveryButton
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : task.status === "ACCEPTED" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Start the delivery when you are ready to
+                                    leave the facility with the order.
+                                </p>
+
+                                <div className="mt-5">
+                                    <StartDeliveryButton
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : task.status === "IN_PROGRESS" ? (
+                            <>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    Ask the customer for the 6-digit delivery
+                                    OTP and enter it below to complete the
+                                    delivery.
+                                </p>
+
+                                <div className="mt-5">
+                                    <VerifyDeliveryOtp
+                                        taskId={task.id}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                                <p className="text-sm font-semibold text-slate-700">
+                                    This delivery is currently{" "}
+                                    {formatStatus(task.status)}.
+                                </p>
+
+                                {task.accepted_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Accepted{" "}
+                                        {formatDate(task.accepted_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.started_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Started{" "}
+                                        {formatDate(task.started_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.completed_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        Completed{" "}
+                                        {formatDate(task.completed_at)}
+                                    </p>
+                                ) : null}
+
+                                {task.delivery_otp_verified_at ? (
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        OTP verified{" "}
+                                        {formatDate(
+                                            task.delivery_otp_verified_at,
+                                        )}
+                                    </p>
+                                ) : null}
                             </div>
-                        </>
-                    ) : task.status === "IN_PROGRESS" ? (
-                        <>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                Ask the customer for the 6-digit pickup OTP
-                                and enter it below to complete the pickup.
-                            </p>
-
-                            <div className="mt-5">
-                                <VerifyPickupOtp taskId={task.id} />
-                            </div>
-                        </>
-                    ) : (
-                        <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                            <p className="text-sm font-semibold text-slate-700">
-                                This task is currently{" "}
-                                {formatStatus(task.status)}.
-                            </p>
-
-                            {task.accepted_at ? (
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Accepted{" "}
-                                    {formatDate(task.accepted_at)}
-                                </p>
-                            ) : null}
-
-                            {task.started_at ? (
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Started{" "}
-                                    {formatDate(task.started_at)}
-                                </p>
-                            ) : null}
-
-                            {task.completed_at ? (
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Completed{" "}
-                                    {formatDate(task.completed_at)}
-                                </p>
-                            ) : null}
-
-                            {task.pickup_otp_verified_at ? (
-                                <p className="mt-1 text-xs text-slate-500">
-                                    OTP verified{" "}
-                                    {formatDate(
-                                        task.pickup_otp_verified_at,
-                                    )}
-                                </p>
-                            ) : null}
-                        </div>
-                    )}
-                </section>
+                        )}
+                    </section>
+                ) : null}
             </div>
         </main>
     );

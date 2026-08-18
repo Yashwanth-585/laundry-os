@@ -89,6 +89,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         router.replace("/admin");
       } else if (profile.role === "delivery_partner") {
         router.replace("/rider");
+      } else if (profile.role === "vendor") {
+        router.replace("/staff");
       } else {
         router.replace("/");
       }
