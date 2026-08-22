@@ -4,6 +4,22 @@ import { randomInt } from "crypto";
 
 import { createClient } from "@/lib/supabase/server";
 
+const DELIVERY_PHOTOS_BUCKET = "delivery-task-photos";
+
+/* ============================================================
+   TYPES
+============================================================ */
+
+type PhotoUploadResult = {
+    success: boolean;
+    urls?: string[];
+    error?: string;
+};
+
+/* ============================================================
+   ASSIGN PICKUP PARTNER
+============================================================ */
+
 export async function assignPickupPartnerAction({
     orderId,
     deliveryPartnerId,
@@ -25,26 +41,32 @@ export async function assignPickupPartnerAction({
         };
     }
 
-    // Verify admin access.
-    const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+    const { data: profile, error: profileError } =
+        await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
 
-    if (profileError || !profile || profile.role !== "admin") {
+    if (
+        profileError ||
+        !profile ||
+        profile.role !== "admin"
+    ) {
         return {
             success: false,
             error: "Unauthorized.",
         };
     }
 
-    // Verify the delivery partner exists and is approved/active.
-    const { data: partner, error: partnerError } = await supabase
-        .from("delivery_partners")
-        .select("id, is_active, is_approved, is_available")
-        .eq("id", deliveryPartnerId)
-        .single();
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, is_active, is_approved, is_available",
+            )
+            .eq("id", deliveryPartnerId)
+            .single();
 
     if (partnerError || !partner) {
         return {
@@ -53,19 +75,24 @@ export async function assignPickupPartnerAction({
         };
     }
 
-    if (!partner.is_active || !partner.is_approved || !partner.is_available) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved ||
+        !partner.is_available
+    ) {
         return {
             success: false,
-            error: "This delivery partner is not available for pickup.",
+            error:
+                "This delivery partner is not available for pickup.",
         };
     }
 
-    // Make sure the order exists.
-    const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select("id, status")
-        .eq("id", orderId)
-        .single();
+    const { data: order, error: orderError } =
+        await supabase
+            .from("orders")
+            .select("id, status")
+            .eq("id", orderId)
+            .single();
 
     if (orderError || !order) {
         return {
@@ -74,8 +101,6 @@ export async function assignPickupPartnerAction({
         };
     }
 
-    // Do not allow pickup assignment after the order
-    // has already moved beyond the pickup stage.
     const allowedStatuses = [
         "PLACED",
         "PICKUP_ASSIGNED",
@@ -89,13 +114,14 @@ export async function assignPickupPartnerAction({
         };
     }
 
-    // Check whether a pickup task already exists.
     const {
         data: existingTask,
         error: existingTaskError,
     } = await supabase
         .from("delivery_tasks")
-        .select("id, delivery_partner_id, status")
+        .select(
+            "id, delivery_partner_id, status",
+        )
         .eq("order_id", orderId)
         .eq("task_type", "PICKUP")
         .maybeSingle();
@@ -108,28 +134,41 @@ export async function assignPickupPartnerAction({
 
         return {
             success: false,
-            error: "Unable to check the existing pickup task.",
+            error:
+                "Unable to check the existing pickup task.",
         };
     }
 
+    const now = new Date().toISOString();
+
     if (existingTask) {
-        // If the task is already completed, don't overwrite it.
         if (existingTask.status === "COMPLETED") {
             return {
                 success: false,
-                error: "The pickup task has already been completed.",
+                error:
+                    "The pickup task has already been completed.",
             };
         }
 
-        const { error: updateTaskError } = await supabase
-            .from("delivery_tasks")
-            .update({
-                delivery_partner_id: deliveryPartnerId,
-                status: "ASSIGNED",
-                assigned_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingTask.id);
+        const { error: updateTaskError } =
+            await supabase
+                .from("delivery_tasks")
+                .update({
+                    delivery_partner_id:
+                        deliveryPartnerId,
+                    status: "ASSIGNED",
+                    assigned_at: now,
+                    updated_at: now,
+
+                    /*
+                     * Reset previous verification data
+                     * if the task is reassigned.
+                     */
+                    pickup_otp: null,
+                    pickup_otp_verified_at: null,
+                    photo_urls: [],
+                })
+                .eq("id", existingTask.id);
 
         if (updateTaskError) {
             console.error(
@@ -139,19 +178,23 @@ export async function assignPickupPartnerAction({
 
             return {
                 success: false,
-                error: "Unable to assign the pickup partner.",
+                error:
+                    "Unable to assign the pickup partner.",
             };
         }
     } else {
-        const { error: createTaskError } = await supabase
-            .from("delivery_tasks")
-            .insert({
-                order_id: orderId,
-                delivery_partner_id: deliveryPartnerId,
-                task_type: "PICKUP",
-                status: "ASSIGNED",
-                assigned_at: new Date().toISOString(),
-            });
+        const { error: createTaskError } =
+            await supabase
+                .from("delivery_tasks")
+                .insert({
+                    order_id: orderId,
+                    delivery_partner_id:
+                        deliveryPartnerId,
+                    task_type: "PICKUP",
+                    status: "ASSIGNED",
+                    assigned_at: now,
+                    photo_urls: [],
+                });
 
         if (createTaskError) {
             console.error(
@@ -161,19 +204,19 @@ export async function assignPickupPartnerAction({
 
             return {
                 success: false,
-                error: "Unable to create the pickup task.",
+                error:
+                    "Unable to create the pickup task.",
             };
         }
     }
 
-    // Move the order into PICKUP_ASSIGNED when appropriate.
     if (
         order.status === "PLACED" ||
         order.status === "ON_HOLD"
     ) {
-        const now = new Date().toISOString();
-
-        const { error: orderUpdateError } = await supabase
+        const {
+            error: orderUpdateError,
+        } = await supabase
             .from("orders")
             .update({
                 status: "PICKUP_ASSIGNED",
@@ -196,15 +239,16 @@ export async function assignPickupPartnerAction({
             };
         }
 
-        // Record the status change in order history.
-        const { error: historyError } = await supabase
-            .from("order_status_history")
-            .insert({
-                order_id: orderId,
-                status: "PICKUP_ASSIGNED",
-                notes: "Pickup partner assigned.",
-                created_at: now,
-            });
+        const { error: historyError } =
+            await supabase
+                .from("order_status_history")
+                .insert({
+                    order_id: orderId,
+                    status: "PICKUP_ASSIGNED",
+                    notes:
+                        "Pickup partner assigned.",
+                    created_at: now,
+                });
 
         if (historyError) {
             console.error(
@@ -222,9 +266,14 @@ export async function assignPickupPartnerAction({
 
     return {
         success: true,
-        warning: "Pickup partner assigned successfully.",
+        warning:
+            "Pickup partner assigned successfully.",
     };
 }
+
+/* ============================================================
+   ACCEPT PICKUP
+============================================================ */
 
 export async function acceptPickupTaskAction(
     taskId: string,
@@ -243,21 +292,27 @@ export async function acceptPickupTaskAction(
         };
     }
 
-    // Verify that the logged-in user is a delivery partner.
-    const { data: partner, error: partnerError } = await supabase
-        .from("delivery_partners")
-        .select("id, is_active, is_approved")
-        .eq("profile_id", user.id)
-        .single();
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, is_active, is_approved",
+            )
+            .eq("profile_id", user.id)
+            .single();
 
     if (partnerError || !partner) {
         return {
             success: false,
-            error: "Delivery partner account not found.",
+            error:
+                "Delivery partner account not found.",
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
             error:
@@ -265,14 +320,14 @@ export async function acceptPickupTaskAction(
         };
     }
 
-    // Fetch the task and make sure it belongs to this rider.
-    const { data: task, error: taskError } = await supabase
-        .from("delivery_tasks")
-        .select(
-            "id, delivery_partner_id, task_type, status",
-        )
-        .eq("id", taskId)
-        .single();
+    const { data: task, error: taskError } =
+        await supabase
+            .from("delivery_tasks")
+            .select(
+                "id, delivery_partner_id, task_type, status",
+            )
+            .eq("id", taskId)
+            .single();
 
     if (taskError || !task) {
         return {
@@ -281,17 +336,22 @@ export async function acceptPickupTaskAction(
         };
     }
 
-    if (task.delivery_partner_id !== partner.id) {
+    if (
+        task.delivery_partner_id !==
+        partner.id
+    ) {
         return {
             success: false,
-            error: "You are not authorized to accept this task.",
+            error:
+                "You are not authorized to accept this task.",
         };
     }
 
     if (task.task_type !== "PICKUP") {
         return {
             success: false,
-            error: "This task is not a pickup task.",
+            error:
+                "This task is not a pickup task.",
         };
     }
 
@@ -303,16 +363,22 @@ export async function acceptPickupTaskAction(
         };
     }
 
-    const { error: updateError } = await supabase
-        .from("delivery_tasks")
-        .update({
-            status: "ACCEPTED",
-            accepted_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        })
-        .eq("id", task.id)
-        .eq("delivery_partner_id", partner.id)
-        .eq("status", "ASSIGNED");
+    const now = new Date().toISOString();
+
+    const { error: updateError } =
+        await supabase
+            .from("delivery_tasks")
+            .update({
+                status: "ACCEPTED",
+                accepted_at: now,
+                updated_at: now,
+            })
+            .eq("id", task.id)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
+            .eq("status", "ASSIGNED");
 
     if (updateError) {
         console.error(
@@ -322,15 +388,21 @@ export async function acceptPickupTaskAction(
 
         return {
             success: false,
-            error: "Unable to accept the pickup task.",
+            error:
+                "Unable to accept the pickup task.",
         };
     }
 
     return {
         success: true,
-        message: "Pickup accepted successfully.",
+        message:
+            "Pickup accepted successfully.",
     };
 }
+
+/* ============================================================
+   START PICKUP
+============================================================ */
 
 export async function startPickupTaskAction(
     taskId: string,
@@ -349,21 +421,27 @@ export async function startPickupTaskAction(
         };
     }
 
-    // Verify the logged-in user is a delivery partner.
-    const { data: partner, error: partnerError } = await supabase
-        .from("delivery_partners")
-        .select("id, is_active, is_approved")
-        .eq("profile_id", user.id)
-        .single();
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, is_active, is_approved",
+            )
+            .eq("profile_id", user.id)
+            .single();
 
     if (partnerError || !partner) {
         return {
             success: false,
-            error: "Delivery partner account not found.",
+            error:
+                "Delivery partner account not found.",
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
             error:
@@ -371,15 +449,18 @@ export async function startPickupTaskAction(
         };
     }
 
-    // Fetch only this rider's pickup task.
-    const { data: task, error: taskError } = await supabase
-        .from("delivery_tasks")
-        .select(
-            "id, order_id, delivery_partner_id, task_type, status",
-        )
-        .eq("id", taskId)
-        .eq("delivery_partner_id", partner.id)
-        .single();
+    const { data: task, error: taskError } =
+        await supabase
+            .from("delivery_tasks")
+            .select(
+                "id, order_id, delivery_partner_id, task_type, status",
+            )
+            .eq("id", taskId)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
+            .single();
 
     if (taskError || !task) {
         return {
@@ -391,7 +472,8 @@ export async function startPickupTaskAction(
     if (task.task_type !== "PICKUP") {
         return {
             success: false,
-            error: "This task is not a pickup task.",
+            error:
+                "This task is not a pickup task.",
         };
     }
 
@@ -403,7 +485,6 @@ export async function startPickupTaskAction(
         };
     }
 
-    // Generate a secure 6-digit OTP server-side.
     const pickupOtp = randomInt(
         100000,
         1000000,
@@ -411,17 +492,23 @@ export async function startPickupTaskAction(
 
     const now = new Date().toISOString();
 
-    const { error: updateError } = await supabase
-        .from("delivery_tasks")
-        .update({
-            status: "IN_PROGRESS",
-            started_at: now,
-            pickup_otp: pickupOtp,
-            updated_at: now,
-        })
-        .eq("id", task.id)
-        .eq("delivery_partner_id", partner.id)
-        .eq("status", "ACCEPTED");
+    const { error: updateError } =
+        await supabase
+            .from("delivery_tasks")
+            .update({
+                status: "IN_PROGRESS",
+                started_at: now,
+                pickup_otp: pickupOtp,
+                pickup_otp_verified_at: null,
+                photo_urls: [],
+                updated_at: now,
+            })
+            .eq("id", task.id)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
+            .eq("status", "ACCEPTED");
 
     if (updateError) {
         console.error(
@@ -435,8 +522,9 @@ export async function startPickupTaskAction(
         };
     }
 
-    // Move the order into OUT_FOR_PICKUP.
-    const { error: orderUpdateError } = await supabase
+    const {
+        error: orderUpdateError,
+    } = await supabase
         .from("orders")
         .update({
             status: "OUT_FOR_PICKUP",
@@ -458,15 +546,16 @@ export async function startPickupTaskAction(
         };
     }
 
-    // Record the status change in order history.
-    const { error: historyError } = await supabase
-        .from("order_status_history")
-        .insert({
-            order_id: task.order_id,
-            status: "OUT_FOR_PICKUP",
-            notes: "Delivery partner started the pickup.",
-            created_at: now,
-        });
+    const { error: historyError } =
+        await supabase
+            .from("order_status_history")
+            .insert({
+                order_id: task.order_id,
+                status: "OUT_FOR_PICKUP",
+                notes:
+                    "Delivery partner started the pickup.",
+                created_at: now,
+            });
 
     if (historyError) {
         console.error(
@@ -483,9 +572,254 @@ export async function startPickupTaskAction(
 
     return {
         success: true,
-        message: "Pickup started successfully.",
+        message:
+            "Pickup started successfully.",
     };
 }
+
+/* ============================================================
+   UPLOAD DELIVERY TASK PHOTOS
+============================================================ */
+
+export async function uploadDeliveryTaskPhotosAction(
+    taskId: string,
+    formData: FormData,
+): Promise<PhotoUploadResult> {
+    const supabase = await createClient();
+
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return {
+            success: false,
+            error: "You must be logged in.",
+        };
+    }
+
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, is_active, is_approved",
+            )
+            .eq("profile_id", user.id)
+            .single();
+
+    if (partnerError || !partner) {
+        return {
+            success: false,
+            error:
+                "Delivery partner account not found.",
+        };
+    }
+
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
+        return {
+            success: false,
+            error:
+                "Your delivery partner account is not active or approved.",
+        };
+    }
+
+    const { data: task, error: taskError } =
+        await supabase
+            .from("delivery_tasks")
+            .select(
+                `
+                id,
+                order_id,
+                delivery_partner_id,
+                task_type,
+                status,
+                photo_urls
+                `,
+            )
+            .eq("id", taskId)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
+            .single();
+
+    if (taskError || !task) {
+        return {
+            success: false,
+            error: "Delivery task not found.",
+        };
+    }
+
+    if (
+        task.task_type !== "PICKUP" &&
+        task.task_type !== "DROP"
+    ) {
+        return {
+            success: false,
+            error: "Invalid delivery task.",
+        };
+    }
+
+    if (task.status !== "IN_PROGRESS") {
+        return {
+            success: false,
+            error:
+                "Photos can only be uploaded while the task is in progress.",
+        };
+    }
+
+    const files = formData
+        .getAll("photos")
+        .filter(
+            (value): value is File =>
+                value instanceof File &&
+                value.size > 0,
+        );
+
+    if (files.length === 0) {
+        return {
+            success: false,
+            error:
+                "Please select at least one photo.",
+        };
+    }
+
+    if (files.length > 5) {
+        return {
+            success: false,
+            error:
+                "You can upload a maximum of 5 photos.",
+        };
+    }
+
+    const MAX_FILE_SIZE = 8 * 1024 * 1024;
+
+    const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    ];
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+        if (!allowedTypes.includes(file.type)) {
+            return {
+                success: false,
+                error:
+                    "Only JPG, PNG, and WebP images are allowed.",
+            };
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            return {
+                success: false,
+                error:
+                    "Each photo must be smaller than 8 MB.",
+            };
+        }
+
+        const extension =
+            file.type === "image/png"
+                ? "png"
+                : file.type === "image/webp"
+                    ? "webp"
+                    : "jpg";
+
+        const fileName =
+            `${crypto.randomUUID()}.${extension}`;
+
+        const path =
+            `${task.order_id}/${task.id}/${fileName}`;
+
+        const { error: uploadError } =
+            await supabase.storage
+                .from(
+                    DELIVERY_PHOTOS_BUCKET,
+                )
+                .upload(path, file, {
+                    cacheControl: "3600",
+                    upsert: false,
+                    contentType: file.type,
+                });
+
+        if (uploadError) {
+            console.error(
+                "DELIVERY PHOTO UPLOAD ERROR:",
+                uploadError,
+            );
+
+            return {
+                success: false,
+                error:
+                    "Unable to upload the verification photo. Please try again.",
+            };
+        }
+
+        const {
+            data: publicUrlData,
+        } = supabase.storage
+            .from(
+                DELIVERY_PHOTOS_BUCKET,
+            )
+            .getPublicUrl(path);
+
+        uploadedUrls.push(
+            publicUrlData.publicUrl,
+        );
+    }
+
+    const existingUrls =
+        Array.isArray(task.photo_urls)
+            ? task.photo_urls
+            : [];
+
+    const allUrls = [
+        ...existingUrls,
+        ...uploadedUrls,
+    ];
+
+    const { error: updateError } =
+        await supabase
+            .from("delivery_tasks")
+            .update({
+                photo_urls: allUrls,
+                updated_at:
+                    new Date().toISOString(),
+            })
+            .eq("id", task.id)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            );
+
+    if (updateError) {
+        console.error(
+            "SAVE DELIVERY PHOTO URLS ERROR:",
+            updateError,
+        );
+
+        return {
+            success: false,
+            error:
+                "Photos were uploaded but could not be linked to the task.",
+        };
+    }
+
+    return {
+        success: true,
+        urls: uploadedUrls,
+    };
+}
+
+/* ============================================================
+   VERIFY PICKUP OTP
+============================================================ */
+
 export async function verifyPickupOtpAction(
     taskId: string,
     otp: string,
@@ -504,24 +838,31 @@ export async function verifyPickupOtpAction(
         };
     }
 
-    // Verify the logged-in user is a delivery partner.
-    const { data: partner, error: partnerError } = await supabase
-        .from("delivery_partners")
-        .select("id, is_active, is_approved")
-        .eq("profile_id", user.id)
-        .single();
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, is_active, is_approved",
+            )
+            .eq("profile_id", user.id)
+            .single();
 
     if (partnerError || !partner) {
         return {
             success: false,
-            error: "Delivery partner account not found.",
+            error:
+                "Delivery partner account not found.",
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
-            error: "Your delivery partner account is not active or approved.",
+            error:
+                "Your delivery partner account is not active or approved.",
         };
     }
 
@@ -530,27 +871,32 @@ export async function verifyPickupOtpAction(
     if (!/^\d{6}$/.test(cleanOtp)) {
         return {
             success: false,
-            error: "Enter a valid 6-digit OTP.",
+            error:
+                "Enter a valid 6-digit OTP.",
         };
     }
 
-    // Fetch only this rider's pickup task.
-    const { data: task, error: taskError } = await supabase
-        .from("delivery_tasks")
-        .select(
-            `
-            id,
-            order_id,
-            delivery_partner_id,
-            task_type,
-            status,
-            pickup_otp,
-            pickup_otp_verified_at
-            `,
-        )
-        .eq("id", taskId)
-        .eq("delivery_partner_id", partner.id)
-        .single();
+    const { data: task, error: taskError } =
+        await supabase
+            .from("delivery_tasks")
+            .select(
+                `
+                id,
+                order_id,
+                delivery_partner_id,
+                task_type,
+                status,
+                pickup_otp,
+                pickup_otp_verified_at,
+                photo_urls
+                `,
+            )
+            .eq("id", taskId)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
+            .single();
 
     if (taskError || !task) {
         return {
@@ -562,28 +908,32 @@ export async function verifyPickupOtpAction(
     if (task.task_type !== "PICKUP") {
         return {
             success: false,
-            error: "This task is not a pickup task.",
+            error:
+                "This task is not a pickup task.",
         };
     }
 
     if (task.status !== "IN_PROGRESS") {
         return {
             success: false,
-            error: `This pickup cannot be verified while it is ${task.status}.`,
+            error:
+                `This pickup cannot be verified while it is ${task.status}.`,
         };
     }
 
     if (task.pickup_otp_verified_at) {
         return {
             success: false,
-            error: "This pickup OTP has already been verified.",
+            error:
+                "This pickup OTP has already been verified.",
         };
     }
 
     if (!task.pickup_otp) {
         return {
             success: false,
-            error: "A pickup OTP has not been generated for this task.",
+            error:
+                "A pickup OTP has not been generated for this task.",
         };
     }
 
@@ -594,10 +944,25 @@ export async function verifyPickupOtpAction(
         };
     }
 
+    const photoUrls =
+        Array.isArray(task.photo_urls)
+            ? task.photo_urls
+            : [];
+
+    if (photoUrls.length === 0) {
+        return {
+            success: false,
+            error:
+                "Upload at least one pickup verification photo before entering the OTP.",
+        };
+    }
+
     const now = new Date().toISOString();
 
-    // Complete the pickup task.
-    const { data: completedTask, error: updateError } = await supabase
+    const {
+        data: completedTask,
+        error: updateError,
+    } = await supabase
         .from("delivery_tasks")
         .update({
             status: "COMPLETED",
@@ -606,7 +971,10 @@ export async function verifyPickupOtpAction(
             updated_at: now,
         })
         .eq("id", task.id)
-        .eq("delivery_partner_id", partner.id)
+        .eq(
+            "delivery_partner_id",
+            partner.id,
+        )
         .eq("status", "IN_PROGRESS")
         .select("id")
         .single();
@@ -619,22 +987,24 @@ export async function verifyPickupOtpAction(
 
         return {
             success: false,
-            error: "Unable to complete the pickup.",
+            error:
+                "Unable to complete the pickup.",
         };
     }
 
-    // Move the order from OUT_FOR_PICKUP to PICKED_UP.
-    const { data: updatedOrder, error: orderUpdateError } =
-        await supabase
-            .from("orders")
-            .update({
-                status: "PICKED_UP",
-                updated_at: now,
-            })
-            .eq("id", task.order_id)
-            .eq("status", "OUT_FOR_PICKUP")
-            .select("id, status")
-            .single();
+    const {
+        data: updatedOrder,
+        error: orderUpdateError,
+    } = await supabase
+        .from("orders")
+        .update({
+            status: "PICKED_UP",
+            updated_at: now,
+        })
+        .eq("id", task.order_id)
+        .eq("status", "OUT_FOR_PICKUP")
+        .select("id, status")
+        .single();
 
     if (orderUpdateError || !updatedOrder) {
         console.error(
@@ -651,14 +1021,16 @@ export async function verifyPickupOtpAction(
         };
     }
 
-    // Add PICKED_UP to the order status history.
-    const { error: historyError } = await supabase
-        .from("order_status_history")
-        .insert({
-            order_id: task.order_id,
-            status: "PICKED_UP",
-            notes: "Pickup verified by delivery partner.",
-        });
+    const { error: historyError } =
+        await supabase
+            .from("order_status_history")
+            .insert({
+                order_id: task.order_id,
+                status: "PICKED_UP",
+                notes:
+                    "Pickup verified by delivery partner with photo and OTP.",
+                created_at: now,
+            });
 
     if (historyError) {
         console.error(
@@ -668,7 +1040,8 @@ export async function verifyPickupOtpAction(
 
         return {
             success: true,
-            message: "Pickup verified and completed successfully.",
+            message:
+                "Pickup verified and completed successfully.",
             warning:
                 "The order was marked as picked up, but the status history could not be updated.",
         };
@@ -676,9 +1049,15 @@ export async function verifyPickupOtpAction(
 
     return {
         success: true,
-        message: "Pickup verified and completed successfully.",
+        message:
+            "Pickup verified and completed successfully.",
     };
 }
+
+/* ============================================================
+   TOGGLE RIDER AVAILABILITY
+============================================================ */
+
 export async function toggleRiderAvailabilityAction() {
     const supabase = await createClient();
 
@@ -694,33 +1073,22 @@ export async function toggleRiderAvailabilityAction() {
         };
     }
 
-    // ----------------------------------------------------------
-    // VERIFY DELIVERY PARTNER
-    // ----------------------------------------------------------
-
-    const { data: partner, error: partnerError } = await supabase
-        .from("delivery_partners")
-        .select(
-            "id, profile_id, is_active, is_approved, is_available",
-        )
-        .eq("profile_id", user.id)
-        .single();
+    const { data: partner, error: partnerError } =
+        await supabase
+            .from("delivery_partners")
+            .select(
+                "id, profile_id, is_active, is_approved, is_available",
+            )
+            .eq("profile_id", user.id)
+            .single();
 
     if (partnerError || !partner) {
-        console.error(
-            "RIDER AVAILABILITY FETCH ERROR:",
-            partnerError,
-        );
-
         return {
             success: false,
-            error: "Delivery partner account not found.",
+            error:
+                "Delivery partner account not found.",
         };
     }
-
-    // ----------------------------------------------------------
-    // VERIFY ACCOUNT STATUS
-    // ----------------------------------------------------------
 
     if (!partner.is_approved) {
         return {
@@ -738,21 +1106,21 @@ export async function toggleRiderAvailabilityAction() {
         };
     }
 
-    // ----------------------------------------------------------
-    // TOGGLE AVAILABILITY
-    // ----------------------------------------------------------
+    const newAvailability =
+        !partner.is_available;
 
-    const newAvailability = !partner.is_available;
     const now = new Date().toISOString();
 
-    const { error: updateError } = await supabase
-        .from("delivery_partners")
-        .update({
-            is_available: newAvailability,
-            updated_at: now,
-        })
-        .eq("id", partner.id)
-        .eq("profile_id", user.id);
+    const { error: updateError } =
+        await supabase
+            .from("delivery_partners")
+            .update({
+                is_available:
+                    newAvailability,
+                updated_at: now,
+            })
+            .eq("id", partner.id)
+            .eq("profile_id", user.id);
 
     if (updateError) {
         console.error(
@@ -769,12 +1137,19 @@ export async function toggleRiderAvailabilityAction() {
 
     return {
         success: true,
-        isAvailable: newAvailability,
-        message: newAvailability
-            ? "You are now available for deliveries."
-            : "You are now unavailable for deliveries.",
+        isAvailable:
+            newAvailability,
+        message:
+            newAvailability
+                ? "You are now available for deliveries."
+                : "You are now unavailable for deliveries.",
     };
 }
+
+/* ============================================================
+   ASSIGN DELIVERY
+============================================================ */
+
 export async function assignDeliveryTaskAction({
     orderId,
     deliveryPartnerId,
@@ -783,10 +1158,6 @@ export async function assignDeliveryTaskAction({
     deliveryPartnerId: string;
 }) {
     const supabase = await createClient();
-
-    // ----------------------------------------------------------
-    // AUTH
-    // ----------------------------------------------------------
 
     const {
         data: { user },
@@ -800,16 +1171,14 @@ export async function assignDeliveryTaskAction({
         };
     }
 
-    // ----------------------------------------------------------
-    // ADMIN
-    // ----------------------------------------------------------
-
-    const { data: profile, error: profileError } =
-        await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
+    const {
+        data: profile,
+        error: profileError,
+    } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
     if (
         profileError ||
@@ -822,16 +1191,14 @@ export async function assignDeliveryTaskAction({
         };
     }
 
-    // ----------------------------------------------------------
-    // ORDER
-    // ----------------------------------------------------------
-
-    const { data: order, error: orderError } =
-        await supabase
-            .from("orders")
-            .select("id, status")
-            .eq("id", orderId)
-            .single();
+    const {
+        data: order,
+        error: orderError,
+    } = await supabase
+        .from("orders")
+        .select("id, status")
+        .eq("id", orderId)
+        .single();
 
     if (orderError || !order) {
         return {
@@ -848,60 +1215,60 @@ export async function assignDeliveryTaskAction({
         };
     }
 
-    // ----------------------------------------------------------
-    // DELIVERY PARTNER
-    // ----------------------------------------------------------
-
-    const { data: partner, error: partnerError } =
-        await supabase
-            .from("delivery_partners")
-            .select(
-                "id, is_active, is_approved, is_available",
-            )
-            .eq("id", deliveryPartnerId)
-            .single();
+    const {
+        data: partner,
+        error: partnerError,
+    } = await supabase
+        .from("delivery_partners")
+        .select(
+            "id, is_active, is_approved, is_available",
+        )
+        .eq("id", deliveryPartnerId)
+        .single();
 
     if (partnerError || !partner) {
         return {
             success: false,
-            error: "Delivery partner not found.",
+            error:
+                "Delivery partner not found.",
         };
     }
 
     if (!partner.is_active) {
         return {
             success: false,
-            error: "This delivery partner is inactive.",
+            error:
+                "This delivery partner is inactive.",
         };
     }
 
     if (!partner.is_approved) {
         return {
             success: false,
-            error: "This delivery partner is not approved.",
+            error:
+                "This delivery partner is not approved.",
         };
     }
 
     if (!partner.is_available) {
         return {
             success: false,
-            error: "This delivery partner is currently unavailable.",
+            error:
+                "This delivery partner is currently unavailable.",
         };
     }
 
-    // ----------------------------------------------------------
-    // CHECK EXISTING DELIVERY TASK
-    // ----------------------------------------------------------
-
-    const { data: existingTask, error: existingTaskError } =
-        await supabase
-            .from("delivery_tasks")
-            .select(
-                "id, delivery_partner_id, status",
-            )
-            .eq("order_id", orderId)
-            .eq("task_type", "DROP")
-            .maybeSingle();
+    const {
+        data: existingTask,
+        error: existingTaskError,
+    } = await supabase
+        .from("delivery_tasks")
+        .select(
+            "id, delivery_partner_id, status",
+        )
+        .eq("order_id", orderId)
+        .eq("task_type", "DROP")
+        .maybeSingle();
 
     if (existingTaskError) {
         console.error(
@@ -932,24 +1299,24 @@ export async function assignDeliveryTaskAction({
         };
     }
 
-    // ----------------------------------------------------------
-    // CREATE DELIVERY TASK
-    // ----------------------------------------------------------
-
     const now = new Date().toISOString();
 
-    const { data: task, error: taskError } =
-        await supabase
-            .from("delivery_tasks")
-            .insert({
-                order_id: orderId,
-                delivery_partner_id: deliveryPartnerId,
-                task_type: "DROP",
-                status: "ASSIGNED",
-                assigned_at: now,
-            })
-            .select("id")
-            .single();
+    const {
+        data: task,
+        error: taskError,
+    } = await supabase
+        .from("delivery_tasks")
+        .insert({
+            order_id: orderId,
+            delivery_partner_id:
+                deliveryPartnerId,
+            task_type: "DROP",
+            status: "ASSIGNED",
+            assigned_at: now,
+            photo_urls: [],
+        })
+        .select("id")
+        .single();
 
     if (taskError || !task) {
         console.error(
@@ -964,29 +1331,29 @@ export async function assignDeliveryTaskAction({
         };
     }
 
-    // ----------------------------------------------------------
-    // MOVE ORDER TO OUT_FOR_DELIVERY
-    // ----------------------------------------------------------
+    const {
+        data: updatedOrder,
+        error: orderUpdateError,
+    } = await supabase
+        .from("orders")
+        .update({
+            status: "OUT_FOR_DELIVERY",
+            updated_at: now,
+        })
+        .eq("id", orderId)
+        .eq("status", "READY")
+        .select("id, status")
+        .single();
 
-    const { data: updatedOrder, error: orderUpdateError } =
-        await supabase
-            .from("orders")
-            .update({
-                status: "OUT_FOR_DELIVERY",
-                updated_at: now,
-            })
-            .eq("id", orderId)
-            .eq("status", "READY")
-            .select("id, status")
-            .single();
-
-    if (orderUpdateError || !updatedOrder) {
+    if (
+        orderUpdateError ||
+        !updatedOrder
+    ) {
         console.error(
             "UPDATE ORDER AFTER DELIVERY ASSIGNMENT ERROR:",
             orderUpdateError,
         );
 
-        // Roll back task creation.
         await supabase
             .from("delivery_tasks")
             .delete()
@@ -998,10 +1365,6 @@ export async function assignDeliveryTaskAction({
                 "Unable to move the order into delivery.",
         };
     }
-
-    // ----------------------------------------------------------
-    // STATUS HISTORY
-    // ----------------------------------------------------------
 
     const { error: historyError } =
         await supabase
@@ -1036,10 +1399,9 @@ export async function assignDeliveryTaskAction({
     };
 }
 
-
-// ============================================================
-// ACCEPT DELIVERY
-// ============================================================
+/* ============================================================
+   ACCEPT DELIVERY
+============================================================ */
 
 export async function acceptDeliveryTaskAction(
     taskId: string,
@@ -1058,18 +1420,16 @@ export async function acceptDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // DELIVERY PARTNER
-    // ----------------------------------------------------------
-
-    const { data: partner, error: partnerError } =
-        await supabase
-            .from("delivery_partners")
-            .select(
-                "id, is_active, is_approved",
-            )
-            .eq("profile_id", user.id)
-            .single();
+    const {
+        data: partner,
+        error: partnerError,
+    } = await supabase
+        .from("delivery_partners")
+        .select(
+            "id, is_active, is_approved",
+        )
+        .eq("profile_id", user.id)
+        .single();
 
     if (partnerError || !partner) {
         return {
@@ -1079,7 +1439,10 @@ export async function acceptDeliveryTaskAction(
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
             error:
@@ -1087,24 +1450,22 @@ export async function acceptDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // TASK
-    // ----------------------------------------------------------
-
-    const { data: task, error: taskError } =
-        await supabase
-            .from("delivery_tasks")
-            .select(
-                `
-                id,
-                order_id,
-                delivery_partner_id,
-                task_type,
-                status
-                `,
-            )
-            .eq("id", taskId)
-            .single();
+    const {
+        data: task,
+        error: taskError,
+    } = await supabase
+        .from("delivery_tasks")
+        .select(
+            `
+            id,
+            order_id,
+            delivery_partner_id,
+            task_type,
+            status
+            `,
+        )
+        .eq("id", taskId)
+        .single();
 
     if (taskError || !task) {
         return {
@@ -1113,7 +1474,10 @@ export async function acceptDeliveryTaskAction(
         };
     }
 
-    if (task.delivery_partner_id !== partner.id) {
+    if (
+        task.delivery_partner_id !==
+        partner.id
+    ) {
         return {
             success: false,
             error:
@@ -1137,10 +1501,6 @@ export async function acceptDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // ACCEPT
-    // ----------------------------------------------------------
-
     const now = new Date().toISOString();
 
     const { error: updateError } =
@@ -1152,7 +1512,10 @@ export async function acceptDeliveryTaskAction(
                 updated_at: now,
             })
             .eq("id", task.id)
-            .eq("delivery_partner_id", partner.id)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
             .eq("status", "ASSIGNED");
 
     if (updateError) {
@@ -1175,10 +1538,9 @@ export async function acceptDeliveryTaskAction(
     };
 }
 
-
-// ============================================================
-// START DELIVERY
-// ============================================================
+/* ============================================================
+   START DELIVERY
+============================================================ */
 
 export async function startDeliveryTaskAction(
     taskId: string,
@@ -1197,18 +1559,16 @@ export async function startDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // DELIVERY PARTNER
-    // ----------------------------------------------------------
-
-    const { data: partner, error: partnerError } =
-        await supabase
-            .from("delivery_partners")
-            .select(
-                "id, is_active, is_approved",
-            )
-            .eq("profile_id", user.id)
-            .single();
+    const {
+        data: partner,
+        error: partnerError,
+    } = await supabase
+        .from("delivery_partners")
+        .select(
+            "id, is_active, is_approved",
+        )
+        .eq("profile_id", user.id)
+        .single();
 
     if (partnerError || !partner) {
         return {
@@ -1218,7 +1578,10 @@ export async function startDeliveryTaskAction(
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
             error:
@@ -1226,25 +1589,26 @@ export async function startDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // TASK
-    // ----------------------------------------------------------
-
-    const { data: task, error: taskError } =
-        await supabase
-            .from("delivery_tasks")
-            .select(
-                `
-                id,
-                order_id,
-                delivery_partner_id,
-                task_type,
-                status
-                `,
-            )
-            .eq("id", taskId)
-            .eq("delivery_partner_id", partner.id)
-            .single();
+    const {
+        data: task,
+        error: taskError,
+    } = await supabase
+        .from("delivery_tasks")
+        .select(
+            `
+            id,
+            order_id,
+            delivery_partner_id,
+            task_type,
+            status
+            `,
+        )
+        .eq("id", taskId)
+        .eq(
+            "delivery_partner_id",
+            partner.id,
+        )
+        .single();
 
     if (taskError || !task) {
         return {
@@ -1269,10 +1633,6 @@ export async function startDeliveryTaskAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // GENERATE DELIVERY OTP
-    // ----------------------------------------------------------
-
     const deliveryOtp = randomInt(
         100000,
         1000000,
@@ -1286,11 +1646,18 @@ export async function startDeliveryTaskAction(
             .update({
                 status: "IN_PROGRESS",
                 started_at: now,
-                delivery_otp: deliveryOtp,
+                delivery_otp:
+                    deliveryOtp,
+                delivery_otp_verified_at:
+                    null,
+                photo_urls: [],
                 updated_at: now,
             })
             .eq("id", task.id)
-            .eq("delivery_partner_id", partner.id)
+            .eq(
+                "delivery_partner_id",
+                partner.id,
+            )
             .eq("status", "ACCEPTED");
 
     if (updateError) {
@@ -1313,10 +1680,9 @@ export async function startDeliveryTaskAction(
     };
 }
 
-
-// ============================================================
-// VERIFY DELIVERY OTP
-// ============================================================
+/* ============================================================
+   VERIFY DELIVERY OTP
+============================================================ */
 
 export async function verifyDeliveryOtpAction(
     taskId: string,
@@ -1336,18 +1702,16 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // DELIVERY PARTNER
-    // ----------------------------------------------------------
-
-    const { data: partner, error: partnerError } =
-        await supabase
-            .from("delivery_partners")
-            .select(
-                "id, is_active, is_approved",
-            )
-            .eq("profile_id", user.id)
-            .single();
+    const {
+        data: partner,
+        error: partnerError,
+    } = await supabase
+        .from("delivery_partners")
+        .select(
+            "id, is_active, is_approved",
+        )
+        .eq("profile_id", user.id)
+        .single();
 
     if (partnerError || !partner) {
         return {
@@ -1357,17 +1721,16 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    if (!partner.is_active || !partner.is_approved) {
+    if (
+        !partner.is_active ||
+        !partner.is_approved
+    ) {
         return {
             success: false,
             error:
                 "Your delivery partner account is not active or approved.",
         };
     }
-
-    // ----------------------------------------------------------
-    // OTP
-    // ----------------------------------------------------------
 
     const cleanOtp = otp.trim();
 
@@ -1379,27 +1742,29 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // TASK
-    // ----------------------------------------------------------
-
-    const { data: task, error: taskError } =
-        await supabase
-            .from("delivery_tasks")
-            .select(
-                `
-                id,
-                order_id,
-                delivery_partner_id,
-                task_type,
-                status,
-                delivery_otp,
-                delivery_otp_verified_at
-                `,
-            )
-            .eq("id", taskId)
-            .eq("delivery_partner_id", partner.id)
-            .single();
+    const {
+        data: task,
+        error: taskError,
+    } = await supabase
+        .from("delivery_tasks")
+        .select(
+            `
+            id,
+            order_id,
+            delivery_partner_id,
+            task_type,
+            status,
+            delivery_otp,
+            delivery_otp_verified_at,
+            photo_urls
+            `,
+        )
+        .eq("id", taskId)
+        .eq(
+            "delivery_partner_id",
+            partner.id,
+        )
+        .single();
 
     if (taskError || !task) {
         return {
@@ -1440,33 +1805,52 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    if (task.delivery_otp !== cleanOtp) {
+    if (
+        task.delivery_otp !==
+        cleanOtp
+    ) {
         return {
             success: false,
-            error: "Incorrect delivery OTP.",
+            error:
+                "Incorrect delivery OTP.",
         };
     }
 
-    // ----------------------------------------------------------
-    // COMPLETE TASK
-    // ----------------------------------------------------------
+    const photoUrls =
+        Array.isArray(task.photo_urls)
+            ? task.photo_urls
+            : [];
+
+    if (photoUrls.length === 0) {
+        return {
+            success: false,
+            error:
+                "Upload at least one delivery verification photo before entering the OTP.",
+        };
+    }
 
     const now = new Date().toISOString();
 
-    const { data: completedTask, error: updateError } =
-        await supabase
-            .from("delivery_tasks")
-            .update({
-                status: "COMPLETED",
-                delivery_otp_verified_at: now,
-                completed_at: now,
-                updated_at: now,
-            })
-            .eq("id", task.id)
-            .eq("delivery_partner_id", partner.id)
-            .eq("status", "IN_PROGRESS")
-            .select("id")
-            .single();
+    const {
+        data: completedTask,
+        error: updateError,
+    } = await supabase
+        .from("delivery_tasks")
+        .update({
+            status: "COMPLETED",
+            delivery_otp_verified_at:
+                now,
+            completed_at: now,
+            updated_at: now,
+        })
+        .eq("id", task.id)
+        .eq(
+            "delivery_partner_id",
+            partner.id,
+        )
+        .eq("status", "IN_PROGRESS")
+        .select("id")
+        .single();
 
     if (updateError || !completedTask) {
         console.error(
@@ -1481,23 +1865,24 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // DELIVERED
-    // ----------------------------------------------------------
+    const {
+        data: updatedOrder,
+        error: orderUpdateError,
+    } = await supabase
+        .from("orders")
+        .update({
+            status: "DELIVERED",
+            updated_at: now,
+        })
+        .eq("id", task.order_id)
+        .eq("status", "OUT_FOR_DELIVERY")
+        .select("id, status")
+        .single();
 
-    const { data: updatedOrder, error: orderUpdateError } =
-        await supabase
-            .from("orders")
-            .update({
-                status: "DELIVERED",
-                updated_at: now,
-            })
-            .eq("id", task.order_id)
-            .eq("status", "OUT_FOR_DELIVERY")
-            .select("id, status")
-            .single();
-
-    if (orderUpdateError || !updatedOrder) {
+    if (
+        orderUpdateError ||
+        !updatedOrder
+    ) {
         console.error(
             "UPDATE ORDER AFTER DELIVERY ERROR:",
             orderUpdateError,
@@ -1512,20 +1897,17 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
-    // ----------------------------------------------------------
-    // HISTORY
-    // ----------------------------------------------------------
-
-    const { error: historyError } =
-        await supabase
-            .from("order_status_history")
-            .insert({
-                order_id: task.order_id,
-                status: "DELIVERED",
-                notes:
-                    "Delivery completed after customer OTP verification.",
-                created_at: now,
-            });
+    const {
+        error: historyError,
+    } = await supabase
+        .from("order_status_history")
+        .insert({
+            order_id: task.order_id,
+            status: "DELIVERED",
+            notes:
+                "Delivery completed after customer OTP and photo verification.",
+            created_at: now,
+        });
 
     if (historyError) {
         console.error(

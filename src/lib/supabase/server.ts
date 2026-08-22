@@ -9,6 +9,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
+
         getAll() {
           return cookieStore.getAll();
         },
