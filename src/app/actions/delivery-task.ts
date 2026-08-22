@@ -1829,6 +1829,23 @@ export async function verifyDeliveryOtpAction(
         };
     }
 
+    const { data: orderForCod } = await supabase
+        .from("orders")
+        .select("payment_method, cod_collected_at")
+        .eq("id", task.order_id)
+        .single();
+
+    if (
+        orderForCod?.payment_method === "COD" &&
+        !orderForCod.cod_collected_at
+    ) {
+        return {
+            success: false,
+            error:
+                "Please collect and confirm the cash payment before completing this delivery.",
+        };
+    }
+
     const now = new Date().toISOString();
 
     const {

@@ -10,6 +10,8 @@ import { AcceptDeliveryButton } from "@/components/rider/AcceptDeliveryButton";
 import { StartDeliveryButton } from "@/components/rider/StartDeliveryButton";
 
 import TaskVerification from "@/components/rider/TaskVerification";
+import ItemVerification from "@/components/rider/ItemVerification";
+import { getTaskItemVerificationAction } from "@/app/actions/item-verification";
 
 function formatStatus(status: string) {
     return status
@@ -118,7 +120,9 @@ export default async function RiderTaskPage({
                 delivery_fee,
                 tax_amount,
                 total_amount,
-                payment_status
+                payment_status,
+                payment_method,
+                cod_collected_at
             )
             `,
         )
@@ -212,6 +216,15 @@ export default async function RiderTaskPage({
             addressError,
         );
     }
+
+    /* ============================================================
+       ITEM VERIFICATION (only needed while task is in progress)
+    ============================================================ */
+
+    const itemVerification =
+        task.status === "IN_PROGRESS"
+            ? await getTaskItemVerificationAction(task.id)
+            : null;
 
     return (
         <main className="min-h-screen bg-sky-100/70">
@@ -531,6 +544,17 @@ export default async function RiderTaskPage({
                                     pickup OTP.
                                 </p>
 
+                                {itemVerification?.success && (
+                                    <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+                                        <ItemVerification
+                                            taskId={task.id}
+                                            taskType="PICKUP"
+                                            items={itemVerification.items}
+                                            initialReports={itemVerification.reports}
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="mt-5">
                                     <TaskVerification
                                         taskId={
@@ -687,6 +711,17 @@ export default async function RiderTaskPage({
                                     customer's 6-digit
                                     delivery OTP.
                                 </p>
+
+                                {itemVerification?.success && (
+                                    <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+                                        <ItemVerification
+                                            taskId={task.id}
+                                            taskType="DROP"
+                                            items={itemVerification.items}
+                                            initialReports={itemVerification.reports}
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="mt-5">
                                     <TaskVerification

@@ -39,6 +39,8 @@ export default async function OrderDetailPage({
                 delivery_fee,
                 tax_amount,
                 total_amount,
+                payment_status,
+                payment_method,
                 created_at,
                 addresses (
                     label,
@@ -159,8 +161,21 @@ export default async function OrderDetailPage({
                             </p>
                         </div>
 
-                        <div className="inline-flex w-fit items-center rounded-full bg-brand-blue-deep/10 px-4 py-2 text-sm font-bold text-brand-blue-deep">
-                            {statusLabel}
+                        <div className="flex flex-col items-end gap-2">
+                            <div className="inline-flex w-fit items-center rounded-full bg-brand-blue-deep/10 px-4 py-2 text-sm font-bold text-brand-blue-deep">
+                                {statusLabel}
+                            </div>
+
+                            {(order.payment_status === "PAID" ||
+                                (order.payment_method === "COD" &&
+                                    order.status === "DELIVERED")) && (
+                                <Link
+                                    href={`/orders/${order.id}/invoice`}
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue-deep hover:underline"
+                                >
+                                    View / Download Invoice →
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </header>

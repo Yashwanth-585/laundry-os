@@ -8,6 +8,8 @@ export type CreateOrderInput = {
     pickupDate: string;
     pickupSlot: string;
     notes?: string;
+    paymentMethod?: "RAZORPAY" | "COD";
+    creditsToApply?: number;
     items: {
         serviceCatalogItemId: string;
         quantity: number;
@@ -271,16 +273,155 @@ export async function createOrderAction(
     const deliveryFee = subtotal > 0 ? 5 : 0;
     const taxAmount = 0;
 
-    const totalAmount =
+    const totalBeforeCredits =
         subtotal + deliveryFee + taxAmount;
 
     if (
-        !Number.isFinite(totalAmount) ||
-        totalAmount <= 0
+        !Number.isFinite(totalBeforeCredits) ||
+        totalBeforeCredits <= 0
     ) {
         return {
             success: false,
             error: "The order amount is invalid.",
+        };
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* REDEEM STORE CREDITS (if requested)                                    */
+    /* ---------------------------------------------------------------------- */
+
+    const requestedCredits = Math.max(
+        0,
+        Number(input.creditsToApply ?? 0),
+    );
+
+    let creditsApplied = 0;
+
+    if (requestedCredits > 0) {
+        // Never let a credit redemption bring the payable amount below zero.
+        const maxRedeemable = Math.max(
+            0,
+            totalBeforeCredits - 1,
+        );
+
+        const amountToRedeem = Math.min(
+            requestedCredits,
+            maxRedeemable,
+        );
+
+        if (amountToRedeem > 0) {
+            const { data: redeemed, error: redeemError } =
+                await supabase.rpc(
+                    "redeem_customer_credits",
+                    {
+                        p_customer_id: user.id,
+                        p_amount: amountToRedeem,
+                    },
+                );
+
+            if (redeemError) {
+                console.error(
+                    "CREDIT REDEMPTION ERROR:",
+                    redeemError,
+                );
+            } else {
+                creditsApplied = Number(redeemed ?? 0);
+            }
+        }
+    }
+
+    const totalAmount =
+        Math.round(
+            (totalBeforeCredits - creditsApplied) * 100,
+        ) / 100;
+
+    const paymentMethod =
+        input.paymentMethod === "COD" ? "COD" : "RAZORPAY";
+
+    /* ---------------------------------------------------------------------- */
+    /* CASH ON DELIVERY: skip Razorpay entirely                              */
+    /* ---------------------------------------------------------------------- */
+
+    if (paymentMethod === "COD") {
+        const { data: order, error: orderError } =
+            await supabase
+                .from("orders")
+                .insert({
+                    customer_id: user.id,
+                    address_id: input.addressId,
+                    status: "PLACED",
+                    pickup_date: input.pickupDate,
+                    pickup_slot: input.pickupSlot,
+                    notes: input.notes?.trim() || null,
+                    subtotal,
+                    delivery_fee: deliveryFee,
+                    tax_amount: taxAmount,
+                    total_amount: totalAmount,
+                    payment_status:
+                        totalAmount <= 0 ? "PAID" : "COD_PENDING",
+                    payment_method: "COD",
+                    credits_applied: creditsApplied,
+                })
+                .select("id")
+                .single();
+
+        if (orderError || !order) {
+            console.error(
+                "COD ORDER CREATION ERROR:",
+                orderError,
+            );
+
+            return {
+                success: false,
+                error:
+                    "We couldn't create your order. Please try again.",
+            };
+        }
+
+        const itemsToInsert = orderItems.map(
+            (item) => ({
+                ...item,
+                order_id: order.id,
+            }),
+        );
+
+        const { error: itemsError } =
+            await supabase
+                .from("order_items")
+                .insert(itemsToInsert);
+
+        if (itemsError) {
+            console.error(
+                "COD ORDER ITEMS CREATION ERROR:",
+                itemsError,
+            );
+
+            await supabase
+                .from("orders")
+                .delete()
+                .eq("id", order.id)
+                .eq("customer_id", user.id);
+
+            return {
+                success: false,
+                error:
+                    "We couldn't create the order items. Please try again.",
+            };
+        }
+
+        await supabase
+            .from("order_status_history")
+            .insert({
+                order_id: order.id,
+                status: "PLACED",
+                changed_by: user.id,
+                notes: "Order created. Cash on delivery selected.",
+            });
+
+        return {
+            success: true,
+            paymentRequired: false,
+            orderId: order.id,
         };
     }
 
@@ -364,6 +505,8 @@ export async function createOrderAction(
                 tax_amount: taxAmount,
                 total_amount: totalAmount,
                 payment_status: "PENDING",
+                payment_method: "RAZORPAY",
+                credits_applied: creditsApplied,
                 razorpay_order_id:
                     razorpayOrder.id,
             })

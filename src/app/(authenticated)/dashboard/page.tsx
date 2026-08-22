@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getMyCreditsAction } from "@/app/actions/credits";
 
 function formatStatus(status: string) {
   return status
@@ -96,6 +97,15 @@ export default async function DashboardPage() {
 
   const recentOrders = allOrders.slice(0, 3);
   const currentOrder = activeOrders[0];
+
+  const creditsResult = await getMyCreditsAction();
+  const creditBalance = creditsResult.success ? creditsResult.balance : 0;
+  const nextExpiring = creditsResult.success
+    ? creditsResult.history.find(
+        (credit) =>
+          credit.status === "ACTIVE" && new Date(credit.expires_at) > new Date(),
+      )
+    : null;
 
   return (
     <main className="bg-sky-100/70">
@@ -354,7 +364,7 @@ export default async function DashboardPage() {
                 </div>
 
                 <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-200">
-                  Coming soon
+                  {creditBalance > 0 ? "Active" : "Earn credits"}
                 </span>
               </div>
 
@@ -363,19 +373,31 @@ export default async function DashboardPage() {
               </p>
 
               <p className="mt-2 text-3xl font-extrabold">
-                —
+                ₹{creditBalance.toFixed(2)}
               </p>
 
               <p className="mt-3 text-sm leading-6 text-slate-300">
-                Earn coins from eligible laundry orders and use them for future
-                benefits.
+                Earned automatically after an order is delivered. Apply your balance
+                at checkout on a future order.
               </p>
 
               <div className="mt-6 border-t border-white/10 pt-4">
-                <p className="text-xs text-slate-400">
-                  Your coin balance and earning history will appear here once
-                  the rewards system is enabled.
-                </p>
+                {nextExpiring ? (
+                  <p className="text-xs text-slate-400">
+                    ₹{(Number(nextExpiring.amount) - Number(nextExpiring.used_amount)).toFixed(2)}{" "}
+                    expires on{" "}
+                    {new Date(nextExpiring.expires_at).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    .
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Credits are valid for 45 days from the day they're issued.
+                  </p>
+                )}
               </div>
             </div>
           </div>

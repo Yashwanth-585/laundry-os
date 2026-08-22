@@ -287,6 +287,36 @@ export default async function AdminOrderDetailPage({
         ? order.addresses[0]
         : order.addresses;
 
+    const { data: itemReports } = await supabase
+        .from("delivery_task_item_reports")
+        .select(
+            `
+            order_item_id,
+            task_type,
+            condition,
+            note,
+            photo_urls,
+            delivery_tasks!inner ( order_id )
+            `,
+        )
+        .eq("delivery_tasks.order_id", id);
+
+    const reportsByItem = new Map<
+        string,
+        { task_type: string; condition: string; note: string | null; photo_urls: string[] }[]
+    >();
+
+    for (const report of itemReports ?? []) {
+        const existing = reportsByItem.get(report.order_item_id) ?? [];
+        existing.push({
+            task_type: report.task_type,
+            condition: report.condition,
+            note: report.note,
+            photo_urls: report.photo_urls ?? [],
+        });
+        reportsByItem.set(report.order_item_id, existing);
+    }
+
     const items = Array.isArray(order.order_items)
         ? order.order_items
         : [];
@@ -471,33 +501,68 @@ export default async function AdminOrderDetailPage({
 
                             <div className="mt-5 divide-y divide-slate-100">
                                 {items.length > 0 ? (
-                                    items.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-                                        >
-                                            <div>
-                                                <p className="font-bold text-slate-900">
-                                                    {item.article_name}
-                                                </p>
+                                    items.map((item) => {
+                                        const reports = reportsByItem.get(item.id) ?? [];
 
-                                                <p className="mt-1 text-xs text-slate-500">
-                                                    {item.category_name} ·{" "}
-                                                    {item.quantity} × ₹
-                                                    {Number(
-                                                        item.unit_price,
-                                                    ).toFixed(2)}
-                                                </p>
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className="py-4 first:pt-0 last:pb-0"
+                                            >
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <p className="font-bold text-slate-900">
+                                                            {item.article_name}
+                                                        </p>
+
+                                                        <p className="mt-1 text-xs text-slate-500">
+                                                            {item.category_name} ·{" "}
+                                                            {item.quantity} × ₹
+                                                            {Number(
+                                                                item.unit_price,
+                                                            ).toFixed(2)}
+                                                        </p>
+                                                    </div>
+
+                                                    <p className="font-bold text-slate-900">
+                                                        ₹
+                                                        {Number(
+                                                            item.total_price,
+                                                        ).toFixed(2)}
+                                                    </p>
+                                                </div>
+
+                                                {reports.length > 0 && (
+                                                    <div className="mt-2 space-y-1.5">
+                                                        {reports.map((report, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                                                                    report.condition === "GOOD"
+                                                                        ? "bg-emerald-50 text-emerald-700"
+                                                                        : report.condition === "DAMAGED"
+                                                                          ? "bg-amber-50 text-amber-700"
+                                                                          : "bg-red-50 text-red-700"
+                                                                }`}
+                                                            >
+                                                                {report.task_type === "PICKUP"
+                                                                    ? "At pickup"
+                                                                    : "At delivery"}
+                                                                : {report.condition}
+                                                                {report.note ? ` — ${report.note}` : ""}
+                                                                {report.photo_urls.length > 0 && (
+                                                                    <span className="ml-1 font-normal">
+                                                                        ({report.photo_urls.length} photo
+                                                                        {report.photo_urls.length === 1 ? "" : "s"})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-
-                                            <p className="font-bold text-slate-900">
-                                                ₹
-                                                {Number(
-                                                    item.total_price,
-                                                ).toFixed(2)}
-                                            </p>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 ) : (
                                     <p className="py-4 text-sm text-slate-500">
                                         No order items found.

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCart } from "@/context/CartContext";
 import { createOrderAction } from "../actions";
 import { verifyPaymentAction } from "../verify-payment-action";
+import { getMyCreditsAction } from "@/app/actions/credits";
 
 type Address = {
     id: string;
@@ -72,6 +73,17 @@ export default function CheckoutForm({
     const [pickupDate, setPickupDate] = useState("");
     const [pickupSlot, setPickupSlot] = useState("");
     const [notes, setNotes] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState<"RAZORPAY" | "COD">("RAZORPAY");
+    const [creditBalance, setCreditBalance] = useState(0);
+    const [applyCredits, setApplyCredits] = useState(false);
+
+    useEffect(() => {
+        getMyCreditsAction().then((result) => {
+            if (result.success) {
+                setCreditBalance(result.balance);
+            }
+        });
+    }, []);
 
     const [isSubmitting, setIsSubmitting] =
         useState(false);
@@ -179,6 +191,8 @@ export default function CheckoutForm({
                 pickupDate,
                 pickupSlot,
                 notes,
+                paymentMethod,
+                creditsToApply: applyCredits ? creditBalance : 0,
                 items: items.map((item) => ({
                     serviceCatalogItemId:
                         item.serviceCatalogItemId,
@@ -192,6 +206,17 @@ export default function CheckoutForm({
                     "Something went wrong. Please try again.",
                 );
                 setIsSubmitting(false);
+                return;
+            }
+
+            /*
+             * COD orders skip Razorpay entirely — the order is
+             * already placed on the server.
+             */
+            if (!result.paymentRequired) {
+                clearCart();
+                router.push(`/orders/${result.orderId}`);
+                router.refresh();
                 return;
             }
 
@@ -574,6 +599,88 @@ export default function CheckoutForm({
                         placeholder="Example: Please call when you arrive."
                         className="mt-5 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-brand-blue-deep focus:ring-2 focus:ring-brand-blue-deep/10"
                     />
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-blue-deep">
+                        Step 4
+                    </p>
+
+                    <h2 className="mt-1 text-xl font-extrabold text-brand-navy">
+                        Payment
+                    </h2>
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        <label
+                            className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+                                paymentMethod === "RAZORPAY"
+                                    ? "border-brand-blue-deep bg-blue-50"
+                                    : "border-slate-200 hover:border-slate-300"
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="RAZORPAY"
+                                checked={paymentMethod === "RAZORPAY"}
+                                onChange={() => setPaymentMethod("RAZORPAY")}
+                                className="accent-brand-blue-deep"
+                            />
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">Pay online</p>
+                                <p className="text-xs text-slate-500">
+                                    Cards, UPI, netbanking via Razorpay
+                                </p>
+                            </div>
+                        </label>
+
+                        <label
+                            className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
+                                paymentMethod === "COD"
+                                    ? "border-brand-blue-deep bg-blue-50"
+                                    : "border-slate-200 hover:border-slate-300"
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="COD"
+                                checked={paymentMethod === "COD"}
+                                onChange={() => setPaymentMethod("COD")}
+                                className="accent-brand-blue-deep"
+                            />
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">
+                                    Cash on Delivery
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Pay in cash when your order is delivered
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
+                    {creditBalance > 0 && (
+                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-slate-300">
+                            <input
+                                type="checkbox"
+                                checked={applyCredits}
+                                onChange={(event) =>
+                                    setApplyCredits(event.target.checked)
+                                }
+                                className="mt-0.5 accent-brand-blue-deep"
+                            />
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">
+                                    Use my Laundry Coins
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Apply your available balance of ₹
+                                    {creditBalance.toFixed(2)} towards this order.
+                                </p>
+                            </div>
+                        </label>
+                    )}
                 </section>
             </div>
 
